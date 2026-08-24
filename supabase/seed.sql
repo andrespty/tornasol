@@ -1,0 +1,6 @@
+-- Seed data for local development.
+-- Runs automatically after migrations on `supabase start` and `supabase db reset`.
+--
+-- Left empty on purpose: Tornasol's data (profiles, groups, shifts) is tied to
+-- real auth users, which are created through signup. Add throwaway test rows
+-- here if you want a pre-populated local database.

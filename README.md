@@ -24,14 +24,33 @@ npm install
 
 ### 2. Set up Supabase
 
+The database schema lives in this repo as versioned migrations under
+[`supabase/migrations/`](supabase/migrations/), and is managed with the
+**Supabase CLI** (installed as a dev dependency — run it with `npx supabase …`
+or the `npm run db:*` scripts). See
+[**Managing the database**](#managing-the-database) below for the full
+workflow. The quick path to a working app:
+
 1. Create a project at [supabase.com](https://supabase.com).
-2. In the SQL editor, run the migration in
-   [`supabase/migrations/0001_init.sql`](supabase/migrations/0001_init.sql).
-   It creates every table, the row-level-security policies, helper functions,
+2. Log in and link this project to it (grab the project ref from your
+   dashboard URL, `https://supabase.com/dashboard/project/<ref>`):
+
+   ```bash
+   npx supabase login
+   npm run db:link -- --project-ref <your-project-ref>
+   ```
+
+3. Push the migration(s) to your remote database:
+
+   ```bash
+   npm run db:push
+   ```
+
+   This creates every table, the row-level-security policies, helper functions,
    the invite/group RPCs, and turns on realtime.
-3. In **Project Settings → API**, copy the **Project URL** and **anon public
-   key**.
-4. Copy the env template and paste those two values in:
+
+4. In **Project Settings → API**, copy the **Project URL** and **anon public
+   key**, then paste them into a `.env` file:
 
    ```bash
    cp .env.example .env
@@ -53,6 +72,10 @@ npm install
 Until real credentials are present, the app shows a friendly "Almost ready"
 setup screen instead of crashing.
 
+> **Prefer the dashboard?** You can still skip the CLI and paste the contents
+> of the migration file into the Supabase **SQL Editor** by hand — the SQL is
+> identical. The CLI just keeps schema changes versioned in the repo.
+
 ### 3. Run
 
 ```bash
@@ -72,6 +95,59 @@ Deploy the `dist/` folder to any static host (Netlify, Vercel, Cloudflare
 Pages, etc.). Make sure the host is configured for **SPA fallback** (serve
 `index.html` for unknown routes) so deep links like `/app/calendar` and
 `/invite/:token` work.
+
+## Managing the database
+
+The schema is source-controlled as timestamped migration files in
+`supabase/migrations/`. The Supabase CLI (a dev dependency here) applies them
+to your database — no manual SQL-editor changes needed. Config lives in
+[`supabase/config.toml`](supabase/config.toml).
+
+There are npm script shortcuts for the common commands:
+
+| Command                        | What it does                                                     |
+| ------------------------------ | --------------------------------------------------------------- |
+| `npm run db:link -- --project-ref <ref>` | Link the repo to your remote Supabase project          |
+| `npm run db:push`              | Apply pending migrations to the **remote** database             |
+| `npm run migration:new <name>` | Create a new empty migration file                               |
+| `npm run migration:list`       | Show which migrations are applied locally vs. remotely          |
+| `npm run db:diff <name>`       | Generate a migration from changes made in Studio / local DB     |
+| `npm run db:pull`              | Pull the remote schema down into a new migration                |
+| `npm run db:start` / `db:stop` | Start/stop a full local Supabase stack (needs Docker)           |
+| `npm run db:reset`             | Wipe the local DB and re-run all migrations + `seed.sql`        |
+| `npm run db:status`            | Show local stack URLs, keys, and ports                          |
+
+### Making a schema change
+
+1. Create a migration file:
+
+   ```bash
+   npm run migration:new add_something
+   ```
+
+2. Write your SQL in the new file under `supabase/migrations/`.
+3. Apply it to your remote project:
+
+   ```bash
+   npm run db:push
+   ```
+
+Commit the new migration file so the change is tracked in the repo.
+
+### Developing against a local database (optional)
+
+If you have **Docker** installed, you can run the whole Supabase stack locally
+instead of hitting your cloud project:
+
+```bash
+npm run db:start          # boots Postgres, Auth, Studio, realtime, mail inbox
+npm run db:status         # prints local URL + anon key to put in .env
+```
+
+Point `.env` at the local values it prints, and use `npm run db:reset` to
+rebuild the database from migrations + `supabase/seed.sql` whenever you want a
+clean slate. Local signup/reset emails are caught by the built-in Inbucket
+inbox (URL shown by `db:status`) — no real mail provider required.
 
 ## How it works
 

@@ -20,3 +20,8 @@ pnpm-debug.log*
 
 # Vite / PWA generated
 dev-dist
+
+# Supabase CLI (local state, never commit)
+supabase/.branches
+supabase/.temp
+supabase/.env
