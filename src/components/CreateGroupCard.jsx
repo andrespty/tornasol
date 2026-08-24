@@ -16,7 +16,10 @@ export default function CreateGroupCard({ onCreated }) {
     try {
       const { data, error: err } = await createGroup(name.trim())
       if (err) throw err
-      await refreshGroups()
+      // The group is saved; if reading it back fails (usually a row-level
+      // security issue), show that rather than silently doing nothing.
+      const { error: refreshErr } = await refreshGroups()
+      if (refreshErr) throw refreshErr
       if (data?.id) setActiveGroupId(data.id)
       setName('')
       onCreated?.(data)

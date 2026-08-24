@@ -12,28 +12,57 @@ export function GroupProvider({ children }) {
     () => window.localStorage.getItem(ACTIVE_GROUP_KEY) || null
   )
   const [loading, setLoading] = useState(true)
+  const [error, setError] = useState(null)
 
   const loadGroups = useCallback(async () => {
     if (!user) {
       setGroups([])
       setLoading(false)
-      return
+      return { error: null }
     }
     setLoading(true)
     // Groups the user belongs to, via their memberships.
-    const { data, error } = await supabase
+    const { data, error: loadError } = await supabase
       .from('group_members')
       .select('group:groups(id, name, admin_id, allow_member_shift_creation, created_at)')
       .eq('user_id', user.id)
 
-    if (!error && data) {
-      const list = data
-        .map((row) => row.group)
-        .filter(Boolean)
-        .sort((a, b) => a.name.localeCompare(b.name))
-      setGroups(list)
+    if (loadError) {
+      // Surface instead of swallowing — a silent read failure here looks like
+      // "I created a group but nothing happened".
+      // eslint-disable-next-line no-console
+      console.error('Tornasol: could not load your groups:', loadError)
+      setError(loadError)
+      setLoading(false)
+      return { error: loadError }
     }
+
+    const rows = data || []
+    const list = rows
+      .map((row) => row.group)
+      .filter(Boolean)
+      .sort((a, b) => a.name.localeCompare(b.name))
+
+    // If we have membership rows but every embedded group came back null, the
+    // `groups` table's RLS is blocking the read even though membership exists.
+    if (rows.length > 0 && list.length === 0) {
+      const rlsError = {
+        message:
+          'Your membership exists but the groups table is not readable — check the "groups" row-level-security SELECT policy.',
+        code: 'RLS_GROUPS_HIDDEN',
+      }
+      // eslint-disable-next-line no-console
+      console.error('Tornasol:', rlsError.message, rows)
+      setGroups([])
+      setError(rlsError)
+      setLoading(false)
+      return { error: rlsError }
+    }
+
+    setGroups(list)
+    setError(null)
     setLoading(false)
+    return { error: null }
   }, [user])
 
   useEffect(() => {
@@ -80,11 +109,12 @@ export function GroupProvider({ children }) {
       isAdmin,
       canCreateShift,
       loading,
+      error,
       setActiveGroupId,
       refreshGroups: loadGroups,
       hasNoGroups: !loading && groups.length === 0,
     }),
-    [groups, activeGroup, activeGroupId, isAdmin, canCreateShift, loading, loadGroups]
+    [groups, activeGroup, activeGroupId, isAdmin, canCreateShift, loading, error, loadGroups]
   )
 
   return <GroupContext.Provider value={value}>{children}</GroupContext.Provider>
