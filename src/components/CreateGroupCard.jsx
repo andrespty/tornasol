@@ -1,0 +1,57 @@
+import { useState } from 'react'
+import { createGroup } from '../lib/api'
+import { useGroups } from '../context/GroupContext'
+import { friendlyError } from '../lib/errors'
+
+export default function CreateGroupCard({ onCreated }) {
+  const { refreshGroups, setActiveGroupId } = useGroups()
+  const [name, setName] = useState('')
+  const [busy, setBusy] = useState(false)
+  const [error, setError] = useState('')
+
+  async function handleSubmit(e) {
+    e.preventDefault()
+    setError('')
+    setBusy(true)
+    try {
+      const { data, error: err } = await createGroup(name.trim())
+      if (err) throw err
+      await refreshGroups()
+      if (data?.id) setActiveGroupId(data.id)
+      setName('')
+      onCreated?.(data)
+    } catch (err) {
+      setError(friendlyError(err))
+    } finally {
+      setBusy(false)
+    }
+  }
+
+  return (
+    <form onSubmit={handleSubmit} className="card stack">
+      <h2 style={{ marginBottom: 0 }}>Start a care team</h2>
+      <p className="muted">
+        Give your group a name — like the person you're caring for.
+      </p>
+      {error && (
+        <div className="alert alert-error" role="alert">
+          {error}
+        </div>
+      )}
+      <label className="field" style={{ marginBottom: 0 }}>
+        <span className="field-label">Group name</span>
+        <input
+          className="input"
+          type="text"
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          placeholder="e.g. Marysol's care team"
+          required
+        />
+      </label>
+      <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={busy}>
+        {busy ? 'Creating…' : 'Create group'}
+      </button>
+    </form>
+  )
+}
