@@ -1,5 +1,8 @@
-import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
+import { useAuth } from '../context/AuthContext'
 import { useGroups } from '../context/GroupContext'
+import Avatar from './Avatar'
+import NoGroupGate from './NoGroupGate'
 import { SunIcon, CalendarIcon, TasksIcon, NotesIcon, PeopleIcon, HomeIcon } from './icons'
 
 const NAV = [
@@ -11,8 +14,15 @@ const NAV = [
 ]
 
 export default function AppLayout() {
-  const { activeGroup, groups, setActiveGroupId } = useGroups()
+  const { profile, user } = useAuth()
+  const { activeGroup, groups, setActiveGroupId, hasNoGroups } = useGroups()
   const navigate = useNavigate()
+  const location = useLocation()
+
+  // The profile/settings page stays reachable even with no group, so a user can
+  // create a group or log out there. Every other tab is gated.
+  const onProfile = location.pathname.startsWith('/app/profile')
+  const showGate = hasNoGroups && !onProfile
 
   return (
     <div className="app-shell">
@@ -27,32 +37,40 @@ export default function AppLayout() {
           <span>Tornasol</span>
         </button>
 
-        {groups.length > 1 ? (
-          <label className="group-switch">
-            <span className="visually-hidden">Active care group</span>
-            <select
-              className="select group-select"
-              value={activeGroup?.id || ''}
-              onChange={(e) => setActiveGroupId(e.target.value)}
-            >
-              {groups.map((g) => (
-                <option key={g.id} value={g.id}>
-                  {g.name}
-                </option>
-              ))}
-            </select>
-          </label>
-        ) : activeGroup ? (
-          <span className="group-name-tag" title={activeGroup.name}>
-            {activeGroup.name}
-          </span>
-        ) : null}
+        <div className="app-header-right">
+          {groups.length > 0 && (
+            <label className="group-switch">
+              <span className="visually-hidden">Active care group</span>
+              <select
+                className="select group-select"
+                value={activeGroup?.id || ''}
+                onChange={(e) => setActiveGroupId(e.target.value)}
+              >
+                {groups.map((g) => (
+                  <option key={g.id} value={g.id}>
+                    {g.name}
+                  </option>
+                ))}
+              </select>
+            </label>
+          )}
+
+          <button
+            type="button"
+            className="profile-btn"
+            onClick={() => navigate('/app/profile')}
+            aria-label="Your profile and settings"
+          >
+            <Avatar
+              name={profile?.display_name || user?.email}
+              initials={profile?.avatar_initials}
+            />
+          </button>
+        </div>
       </header>
 
       <main className="app-main">
-        <div className="container">
-          <Outlet />
-        </div>
+        <div className="container">{showGate ? <NoGroupGate /> : <Outlet />}</div>
       </main>
 
       <nav className="bottom-nav" aria-label="Main">
@@ -61,9 +79,7 @@ export default function AppLayout() {
             key={to}
             to={to}
             end={end}
-            className={({ isActive }) =>
-              `bottom-nav-item${isActive ? ' is-active' : ''}`
-            }
+            className={({ isActive }) => `bottom-nav-item${isActive ? ' is-active' : ''}`}
           >
             <Icon />
             <span>{label}</span>

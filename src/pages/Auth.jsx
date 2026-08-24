@@ -22,6 +22,9 @@ export default function Auth() {
   const [error, setError] = useState('')
   const [notice, setNotice] = useState('')
   const [busy, setBusy] = useState(false)
+  // When a signup needs email confirmation, we replace the whole screen with a
+  // single clean message (no lingering email/password form).
+  const [confirmationSent, setConfirmationSent] = useState(false)
 
   const redirectTo = location.state?.from || '/app'
 
@@ -48,7 +51,7 @@ export default function Auth() {
       }
 
       if (mode === MODES.SIGNUP) {
-        const { error: err } = await supabase.auth.signUp({
+        const { data, error: err } = await supabase.auth.signUp({
           email: email.trim(),
           password,
           options: {
@@ -59,13 +62,24 @@ export default function Auth() {
           },
         })
         if (err) throw err
+
+        // Supabase does not error on duplicate signups when email confirmation
+        // is enabled (to avoid leaking who has an account) — instead it returns
+        // a user with an empty `identities` array. Treat that as "already
+        // registered" and stop, rather than showing a confirmation message.
+        const identities = data?.user?.identities
+        if (Array.isArray(identities) && identities.length === 0) {
+          setError(
+            'There is already an account with this email. Try logging in instead.'
+          )
+          return
+        }
+
         // With email confirmation off, the session is active immediately.
-        // With it on, prompt the user to confirm.
+        // With it on, replace the screen with a single clean message.
         const { data: sessionData } = await supabase.auth.getSession()
         if (!sessionData.session) {
-          setNotice(
-            'Almost there! Check your email for a link to confirm your account.'
-          )
+          setConfirmationSent(true)
           return
         }
         navigate(redirectTo, { replace: true })
@@ -88,6 +102,30 @@ export default function Auth() {
 
   const isForgot = mode === MODES.FORGOT
   const isSignup = mode === MODES.SIGNUP
+
+  // After a signup that needs email confirmation: show ONLY the message.
+  if (confirmationSent) {
+    return (
+      <div className="auth-page">
+        <div className="container auth-inner">
+          <Link to="/" className="auth-brand" aria-label="Tornasol home">
+            <SunIcon width={44} height={44} />
+            <span>Tornasol</span>
+          </Link>
+          <div className="card stack center">
+            <h1 style={{ marginBottom: 0 }}>Check your email</h1>
+            <div className="alert alert-success" role="status">
+              We sent a link to <strong>{email.trim()}</strong>. Open it on this
+              phone to finish setting up your account.
+            </div>
+            <p className="muted" style={{ marginBottom: 0 }}>
+              You can close this page — the link will bring you right back.
+            </p>
+          </div>
+        </div>
+      </div>
+    )
+  }
 
   return (
     <div className="auth-page">

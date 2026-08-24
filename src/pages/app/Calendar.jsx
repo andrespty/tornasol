@@ -22,12 +22,11 @@ import { InlineLoading } from '../../components/Loading'
 import Avatar from '../../components/Avatar'
 import CreateShiftModal from '../../components/CreateShiftModal'
 import ShiftDetailModal from '../../components/ShiftDetailModal'
-import CreateGroupCard from '../../components/CreateGroupCard'
 import { PlusIcon } from '../../components/icons'
 
 export default function Calendar() {
   const { user } = useAuth()
-  const { activeGroupId, isAdmin, canCreateShift, hasNoGroups } = useGroups()
+  const { activeGroupId, isAdmin, canCreateShift } = useGroups()
 
   const [view, setView] = useState('week') // 'week' | 'month'
   const [anchor, setAnchor] = useState(() => startOfDay(new Date()))
@@ -108,15 +107,6 @@ export default function Calendar() {
     setSelectedDay(t)
   }
 
-  if (hasNoGroups) {
-    return (
-      <div className="page stack-3">
-        <h1>Shifts</h1>
-        <p className="muted">Create a care team first to start scheduling shifts.</p>
-        <CreateGroupCard />
-      </div>
-    )
-  }
 
   const weekStartLabel = startOfWeek(anchor)
   const periodLabel =

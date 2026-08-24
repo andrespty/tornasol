@@ -1269,3 +1269,102 @@ img {
     padding-bottom: var(--space-4);
   }
 }
+
+/* ============================================================
+   Header right cluster: group switcher + profile button
+   ============================================================ */
+
+.app-header-right {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.app-header-right .group-select {
+  max-width: 42vw;
+}
+
+.profile-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  border: none;
+  background: none;
+  border-radius: 50%;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: transform 120ms var(--motion-ease);
+}
+
+.profile-btn:active {
+  transform: scale(0.94);
+}
+
+.profile-btn .avatar {
+  border: 2px solid var(--color-surface);
+  box-shadow: var(--shadow-card);
+}
+
+/* ============================================================
+   Profile / settings page
+   ============================================================ */
+
+.profile-identity {
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+}
+
+.profile-name {
+  font-weight: 700;
+  font-size: 1.2rem;
+}
+
+.group-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.group-list-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  text-align: left;
+  padding: var(--space-2);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-button);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-family: var(--font-body);
+  color: var(--color-text-primary);
+  min-height: 56px;
+  transition: border-color var(--motion-duration) var(--motion-ease),
+    background-color var(--motion-duration) var(--motion-ease);
+}
+
+.group-list-item.is-active {
+  border-color: var(--color-secondary);
+  background: rgba(15, 110, 86, 0.06);
+}
+
+.group-list-item:hover {
+  border-color: var(--color-accent-light);
+}
+
+.group-list-name {
+  font-weight: 700;
+  font-size: 1.1rem;
+  word-break: break-word;
+}
+
+.group-list-switch {
+  font-size: 0.95rem;
+}

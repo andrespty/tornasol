@@ -14,6 +14,7 @@ import Calendar from './pages/app/Calendar'
 import Tasks from './pages/app/Tasks'
 import Notes from './pages/app/Notes'
 import Group from './pages/app/Group'
+import Profile from './pages/app/Profile'
 
 export default function App() {
   return (
@@ -38,6 +39,7 @@ export default function App() {
         <Route path="tasks" element={<Tasks />} />
         <Route path="notes" element={<Notes />} />
         <Route path="group" element={<Group />} />
+        <Route path="profile" element={<Profile />} />
       </Route>
 
       <Route path="*" element={<NotFound />} />

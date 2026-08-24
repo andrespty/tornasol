@@ -1,25 +1,16 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
+import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useGroups } from '../../context/GroupContext'
-import {
-  fetchGroupMembers,
-  createInvite,
-  updateGroupSetting,
-  removeMember,
-} from '../../lib/api'
+import { fetchGroupMembers, createInvite } from '../../lib/api'
 import { useRealtimeRefresh } from '../../hooks/useRealtimeRefresh'
 import { InlineLoading } from '../../components/Loading'
 import Avatar from '../../components/Avatar'
-import Modal from '../../components/Modal'
-import CreateGroupCard from '../../components/CreateGroupCard'
 import { friendlyError } from '../../lib/errors'
 import { CopyIcon } from '../../components/icons'
 
 export default function Group() {
-  const { user, profile, signOut } = useAuth()
-  const { activeGroup, activeGroupId, isAdmin, hasNoGroups, refreshGroups } = useGroups()
-  const navigate = useNavigate()
+  const { user } = useAuth()
+  const { activeGroup, activeGroupId, isAdmin } = useGroups()
 
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -27,8 +18,6 @@ export default function Group() {
   const [inviteBusy, setInviteBusy] = useState(false)
   const [copied, setCopied] = useState(false)
   const [error, setError] = useState('')
-  const [showNewGroup, setShowNewGroup] = useState(false)
-  const [savingSetting, setSavingSetting] = useState(false)
 
   const load = useCallback(async () => {
     if (!activeGroupId) return
@@ -40,6 +29,7 @@ export default function Group() {
   useEffect(() => {
     setLoading(true)
     setInviteUrl('')
+    setCopied(false)
     load()
   }, [load])
 
@@ -49,8 +39,6 @@ export default function Group() {
     load
   )
 
-  const allowMemberShifts = activeGroup?.allow_member_shift_creation ?? true
-
   async function handleCreateInvite() {
     setInviteBusy(true)
     setError('')
@@ -58,8 +46,7 @@ export default function Group() {
     try {
       const { data, error: err } = await createInvite(activeGroupId, user.id)
       if (err) throw err
-      const url = `${window.location.origin}/invite/${data.token}`
-      setInviteUrl(url)
+      setInviteUrl(`${window.location.origin}/invite/${data.token}`)
     } catch (err) {
       setError(friendlyError(err))
     } finally {
@@ -73,60 +60,17 @@ export default function Group() {
       setCopied(true)
       setTimeout(() => setCopied(false), 2500)
     } catch {
-      // Clipboard may be blocked; the field is selectable as a fallback.
       setCopied(false)
     }
   }
 
-  async function toggleMemberShifts() {
-    setSavingSetting(true)
-    const next = !allowMemberShifts
-    const { error: err } = await updateGroupSetting(activeGroupId, {
-      allow_member_shift_creation: next,
-    })
-    if (!err) await refreshGroups()
-    setSavingSetting(false)
-  }
-
-  async function handleRemove(member) {
-    if (!window.confirm(`Remove ${member.name} from this group?`)) return
-    const { error: err } = await removeMember(activeGroupId, member.userId)
-    if (err) setError(friendlyError(err))
-    else load()
-  }
-
-  async function handleLeave() {
-    if (
-      !window.confirm(
-        isAdmin
-          ? 'You are the admin. Leaving may leave this group without an admin. Continue?'
-          : 'Leave this group?'
-      )
-    )
-      return
-    const { error: err } = await removeMember(activeGroupId, user.id)
-    if (err) {
-      setError(friendlyError(err))
-    } else {
-      await refreshGroups()
-      navigate('/app')
-    }
-  }
-
-  const shareText = useMemo(
-    () => `Join our care team on Tornasol: ${inviteUrl}`,
-    [inviteUrl]
-  )
-
-  if (hasNoGroups) {
-    return (
-      <div className="page stack-3">
-        <h1>Your group</h1>
-        <CreateGroupCard />
-        <AccountCard profile={profile} email={user?.email} onSignOut={signOut} />
-      </div>
-    )
-  }
+  const emailHref = inviteUrl
+    ? `mailto:?subject=${encodeURIComponent(
+        `Join ${activeGroup?.name || 'our care team'} on Tornasol`
+      )}&body=${encodeURIComponent(
+        `Hi,\n\nPlease join ${activeGroup?.name || 'our care team'} on Tornasol so we can coordinate care together.\n\nTap this link to join:\n${inviteUrl}\n\nThank you!`
+      )}`
+    : '#'
 
   return (
     <div className="page stack-3">
@@ -134,7 +78,6 @@ export default function Group() {
         <h1>{activeGroup?.name}</h1>
         <p className="muted">
           {members.length} {members.length === 1 ? 'person' : 'people'} on this care team
-          {isAdmin && ' · You are the admin'}
         </p>
       </div>
 
@@ -164,14 +107,6 @@ export default function Group() {
                     </span>
                     {memberIsAdmin && <span className="pill pill-admin">Admin</span>}
                   </div>
-                  {isAdmin && !isSelf && (
-                    <button
-                      className="link-btn member-remove"
-                      onClick={() => handleRemove(m)}
-                    >
-                      Remove
-                    </button>
-                  )}
                 </li>
               )
             })}
@@ -180,13 +115,13 @@ export default function Group() {
       </section>
 
       {/* Invite */}
-      {isAdmin && (
+      {isAdmin ? (
         <section className="card stack">
           <h2 style={{ marginBottom: 0 }}>Invite someone</h2>
           <p className="muted" style={{ margin: 0 }}>
-            Create a link and share it however you like — text, email, or
-            WhatsApp.
+            Create a link and share it, or send it by email.
           </p>
+
           {!inviteUrl ? (
             <button
               className="btn btn-secondary btn-block"
@@ -209,87 +144,40 @@ export default function Group() {
                   <CopyIcon /> {copied ? 'Copied!' : 'Copy'}
                 </button>
               </div>
+
+              <a className="btn btn-outline btn-block" href={emailHref}>
+                Send by email
+              </a>
+
               {typeof navigator !== 'undefined' && navigator.share && (
                 <button
-                  className="btn btn-outline btn-block"
+                  className="btn btn-ghost btn-block"
                   onClick={() =>
                     navigator
-                      .share({ title: 'Tornasol invite', text: shareText, url: inviteUrl })
+                      .share({
+                        title: 'Tornasol invite',
+                        text: `Join ${activeGroup?.name || 'our care team'} on Tornasol`,
+                        url: inviteUrl,
+                      })
                       .catch(() => {})
                   }
                 >
-                  Share link
+                  Share…
                 </button>
               )}
+
               <p className="field-hint">This link works for 14 days.</p>
             </div>
           )}
         </section>
-      )}
-
-      {/* Admin settings */}
-      {isAdmin && (
-        <section className="card stack">
-          <h2 style={{ marginBottom: 0 }}>Group settings</h2>
-          <div className="setting-row">
-            <div>
-              <div style={{ fontWeight: 700 }}>Members can create shifts</div>
-              <div className="muted" style={{ fontSize: '0.95rem' }}>
-                {allowMemberShifts
-                  ? 'Anyone can add shifts to the calendar.'
-                  : 'Only you can add shifts. Others can take or release them.'}
-              </div>
-            </div>
-            <button
-              className={`toggle${allowMemberShifts ? ' is-on' : ''}`}
-              role="switch"
-              aria-checked={allowMemberShifts}
-              aria-label="Members can create shifts"
-              onClick={toggleMemberShifts}
-              disabled={savingSetting}
-            >
-              <span className="toggle-knob" />
-            </button>
-          </div>
+      ) : (
+        <section className="card">
+          <p className="muted" style={{ marginBottom: 0 }}>
+            Only the team admin can invite new people. Ask them to send you a
+            link.
+          </p>
         </section>
       )}
-
-      {/* This group actions + account */}
-      <section className="card stack">
-        <h2 style={{ marginBottom: 0 }}>You</h2>
-        <button className="btn btn-ghost btn-block" onClick={() => setShowNewGroup(true)}>
-          Start another care team
-        </button>
-        <button className="btn btn-danger btn-block" onClick={handleLeave}>
-          Leave this group
-        </button>
-      </section>
-
-      <AccountCard profile={profile} email={user?.email} onSignOut={signOut} />
-
-      <Modal open={showNewGroup} onClose={() => setShowNewGroup(false)} title="New care team">
-        <CreateGroupCard onCreated={() => setShowNewGroup(false)} />
-      </Modal>
     </div>
-  )
-}
-
-function AccountCard({ profile, email, onSignOut }) {
-  return (
-    <section className="card stack">
-      <h2 style={{ marginBottom: 0 }}>Account</h2>
-      <div className="member-item" style={{ padding: 0 }}>
-        <Avatar name={profile?.display_name || email} initials={profile?.avatar_initials} />
-        <div className="member-info">
-          <span className="member-name">{profile?.display_name || 'You'}</span>
-          <span className="muted" style={{ fontSize: '0.95rem' }}>
-            {email}
-          </span>
-        </div>
-      </div>
-      <button className="btn btn-ghost btn-block" onClick={onSignOut}>
-        Log out
-      </button>
-    </section>
   )
 }

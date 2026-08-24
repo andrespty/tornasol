@@ -11,13 +11,12 @@ import {
 import { useRealtimeRefresh } from '../../hooks/useRealtimeRefresh'
 import { InlineLoading } from '../../components/Loading'
 import Avatar from '../../components/Avatar'
-import CreateGroupCard from '../../components/CreateGroupCard'
 import { friendlyError } from '../../lib/errors'
 import { CheckIcon, TrashIcon } from '../../components/icons'
 
 export default function Tasks() {
   const { user } = useAuth()
-  const { activeGroupId, hasNoGroups } = useGroups()
+  const { activeGroupId } = useGroups()
 
   const [tasks, setTasks] = useState([])
   const [members, setMembers] = useState([])
@@ -96,15 +95,6 @@ export default function Tasks() {
     if (err) load()
   }
 
-  if (hasNoGroups) {
-    return (
-      <div className="page stack-3">
-        <h1>Tasks</h1>
-        <p className="muted">Create a care team to start a shared to-do list.</p>
-        <CreateGroupCard />
-      </div>
-    )
-  }
 
   return (
     <div className="page stack-3">
