@@ -4,11 +4,10 @@ import { fetchNotesForGroup } from '../../lib/api'
 import { useRealtimeRefresh } from '../../hooks/useRealtimeRefresh'
 import { InlineLoading } from '../../components/Loading'
 import Avatar from '../../components/Avatar'
-import CreateGroupCard from '../../components/CreateGroupCard'
 import { formatDateShort, formatTime, formatTimeRange } from '../../lib/date'
 
 export default function Notes() {
-  const { activeGroupId, hasNoGroups } = useGroups()
+  const { activeGroupId } = useGroups()
   const [notes, setNotes] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -31,15 +30,6 @@ export default function Notes() {
     load
   )
 
-  if (hasNoGroups) {
-    return (
-      <div className="page stack-3">
-        <h1>Notes</h1>
-        <p className="muted">Create a care team to start sharing handoff notes.</p>
-        <CreateGroupCard />
-      </div>
-    )
-  }
 
   return (
     <div className="page stack-3">
