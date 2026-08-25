@@ -8,9 +8,19 @@
 -- ============================================================
 
 -- ---------- 1. Rename tables/columns ----------
+-- Guarded so this migration can be safely re-run after a partial apply.
 alter table if exists public.shifts rename to events;
 alter table if exists public.shift_notes rename to event_notes;
-alter table if exists public.event_notes rename column shift_id to event_id;
+
+do $$
+begin
+  if exists (
+    select 1 from information_schema.columns
+    where table_schema = 'public' and table_name = 'event_notes' and column_name = 'shift_id'
+  ) then
+    alter table public.event_notes rename column shift_id to event_id;
+  end if;
+end $$;
 
 -- ---------- 2. Event types (per group) ----------
 create table if not exists public.event_types (
@@ -114,8 +124,8 @@ returns boolean language sql security definer set search_path = public stable as
   );
 $$;
 
-drop function if exists public.is_member_of_shift_group(uuid);
-drop function if exists public.can_create_shift(uuid);
+-- Note: the old is_member_of_shift_group / can_create_shift functions are
+-- dropped at the very end, after the policies that depend on them are replaced.
 
 -- Enforce capacity on sign-up (guards against overbooking / races).
 create or replace function public.enforce_event_capacity()
@@ -303,3 +313,7 @@ begin
     end if;
   end loop;
 end $$;
+
+-- ---------- 11. Drop old functions (now that dependent policies are gone) ----------
+drop function if exists public.is_member_of_shift_group(uuid);
+drop function if exists public.can_create_shift(uuid);
