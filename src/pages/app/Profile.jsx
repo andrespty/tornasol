@@ -84,7 +84,7 @@ export default function Profile() {
         <section className="card stack">
           <h2 style={{ marginBottom: 0 }}>Start another care team</h2>
           <p className="muted" style={{ marginBottom: 0 }}>
-            You can care for more than one person. Each team has its own shifts,
+            You can care for more than one person. Each team has its own events,
             notes, and members.
           </p>
           <button className="btn btn-primary btn-block" onClick={() => setCreating(true)}>

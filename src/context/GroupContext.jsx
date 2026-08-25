@@ -97,7 +97,7 @@ export function GroupProvider({ children }) {
 
   const isAdmin = Boolean(activeGroup && user && activeGroup.admin_id === user.id)
 
-  const canCreateShift = Boolean(
+  const canCreateEvent = Boolean(
     activeGroup && (isAdmin || activeGroup.allow_member_shift_creation)
   )
 
@@ -107,14 +107,14 @@ export function GroupProvider({ children }) {
       activeGroup,
       activeGroupId,
       isAdmin,
-      canCreateShift,
+      canCreateEvent,
       loading,
       error,
       setActiveGroupId,
       refreshGroups: loadGroups,
       hasNoGroups: !loading && groups.length === 0,
     }),
-    [groups, activeGroup, activeGroupId, isAdmin, canCreateShift, loading, error, loadGroups]
+    [groups, activeGroup, activeGroupId, isAdmin, canCreateEvent, loading, error, loadGroups]
   )
 
   return <GroupContext.Provider value={value}>{children}</GroupContext.Provider>

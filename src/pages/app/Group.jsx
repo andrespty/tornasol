@@ -1,16 +1,18 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useGroups } from '../../context/GroupContext'
-import { fetchGroupMembers, createInvite } from '../../lib/api'
+import { fetchGroupMembers, createInvite, updateGroupSetting } from '../../lib/api'
 import { useRealtimeRefresh } from '../../hooks/useRealtimeRefresh'
 import { InlineLoading } from '../../components/Loading'
 import Avatar from '../../components/Avatar'
+import EventTypesManager from '../../components/EventTypesManager'
 import { friendlyError } from '../../lib/errors'
 import { CopyIcon } from '../../components/icons'
 
 export default function Group() {
   const { user } = useAuth()
-  const { activeGroup, activeGroupId, isAdmin } = useGroups()
+  const { activeGroup, activeGroupId, isAdmin, refreshGroups } = useGroups()
+  const [savingSetting, setSavingSetting] = useState(false)
 
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -62,6 +64,17 @@ export default function Group() {
     } catch {
       setCopied(false)
     }
+  }
+
+  const allowMemberEvents = activeGroup?.allow_member_shift_creation ?? true
+
+  async function toggleMemberEvents() {
+    setSavingSetting(true)
+    const { error: err } = await updateGroupSetting(activeGroupId, {
+      allow_member_shift_creation: !allowMemberEvents,
+    })
+    if (!err) await refreshGroups()
+    setSavingSetting(false)
   }
 
   const emailHref = inviteUrl
@@ -177,6 +190,37 @@ export default function Group() {
             link.
           </p>
         </section>
+      )}
+
+      {/* Admin settings */}
+      {isAdmin && (
+        <>
+          <section className="card stack">
+            <h2 style={{ marginBottom: 0 }}>Group settings</h2>
+            <div className="setting-row">
+              <div>
+                <div style={{ fontWeight: 700 }}>Members can create events</div>
+                <div className="muted" style={{ fontSize: '0.95rem' }}>
+                  {allowMemberEvents
+                    ? 'Anyone can add events to the calendar.'
+                    : 'Only you can add events. Others can sign up.'}
+                </div>
+              </div>
+              <button
+                className={`toggle${allowMemberEvents ? ' is-on' : ''}`}
+                role="switch"
+                aria-checked={allowMemberEvents}
+                aria-label="Members can create events"
+                onClick={toggleMemberEvents}
+                disabled={savingSetting}
+              >
+                <span className="toggle-knob" />
+              </button>
+            </div>
+          </section>
+
+          <EventTypesManager groupId={activeGroupId} />
+        </>
       )}
     </div>
   )
