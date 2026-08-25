@@ -32,3 +32,8 @@ export const supabase = createClient(
     },
   }
 )
+
+// Dev-only: expose the client for debugging from the browser console.
+if (import.meta.env.DEV) {
+  window.supabase = supabase
+}
