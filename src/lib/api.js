@@ -7,20 +7,37 @@ export async function createGroup(name) {
 }
 
 export async function fetchGroupMembers(groupId) {
-  // group_members joined to profiles for display names + initials.
-  const { data, error } = await supabase
+  // group_members.user_id has a foreign key to auth.users, not profiles, so we
+  // can't embed profiles directly. Fetch memberships, then their profiles, and
+  // merge — robust against PostgREST relationship detection.
+  const { data: rows, error } = await supabase
     .from('group_members')
-    .select('user_id, joined_at, profile:profiles(id, display_name, email, avatar_initials)')
+    .select('user_id, joined_at')
     .eq('group_id', groupId)
     .order('joined_at', { ascending: true })
   if (error) return { data: [], error }
-  const members = (data || []).map((row) => ({
-    userId: row.user_id,
-    joinedAt: row.joined_at,
-    name: row.profile?.display_name || row.profile?.email || 'Member',
-    email: row.profile?.email || '',
-    initials: row.profile?.avatar_initials || null,
-  }))
+
+  const ids = (rows || []).map((r) => r.user_id)
+  let profilesById = {}
+  if (ids.length) {
+    const { data: profs, error: profErr } = await supabase
+      .from('profiles')
+      .select('id, display_name, email, avatar_initials')
+      .in('id', ids)
+    if (profErr) return { data: [], error: profErr }
+    profilesById = Object.fromEntries((profs || []).map((p) => [p.id, p]))
+  }
+
+  const members = (rows || []).map((row) => {
+    const profile = profilesById[row.user_id]
+    return {
+      userId: row.user_id,
+      joinedAt: row.joined_at,
+      name: profile?.display_name || profile?.email || 'Member',
+      email: profile?.email || '',
+      initials: profile?.avatar_initials || null,
+    }
+  })
   return { data: members, error: null }
 }
 
