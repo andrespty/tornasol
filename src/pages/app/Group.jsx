@@ -1,10 +1,17 @@
 import { useCallback, useEffect, useState } from 'react'
+import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useGroups } from '../../context/GroupContext'
-import { fetchGroupMembers, createInvite, updateGroupSetting } from '../../lib/api'
+import {
+  fetchGroupMembers,
+  createInvite,
+  updateGroupSetting,
+  deleteGroup,
+} from '../../lib/api'
 import { useRealtimeRefresh } from '../../hooks/useRealtimeRefresh'
 import { InlineLoading } from '../../components/Loading'
 import Avatar from '../../components/Avatar'
+import Modal from '../../components/Modal'
 import EventTypesManager from '../../components/EventTypesManager'
 import { friendlyError } from '../../lib/errors'
 import { CopyIcon } from '../../components/icons'
@@ -12,7 +19,11 @@ import { CopyIcon } from '../../components/icons'
 export default function Group() {
   const { user } = useAuth()
   const { activeGroup, activeGroupId, isAdmin, refreshGroups } = useGroups()
+  const navigate = useNavigate()
   const [savingSetting, setSavingSetting] = useState(false)
+  const [showDelete, setShowDelete] = useState(false)
+  const [confirmName, setConfirmName] = useState('')
+  const [deleting, setDeleting] = useState(false)
 
   const [members, setMembers] = useState([])
   const [loading, setLoading] = useState(true)
@@ -76,6 +87,24 @@ export default function Group() {
     if (!err) await refreshGroups()
     setSavingSetting(false)
   }
+
+  async function handleDeleteGroup() {
+    setDeleting(true)
+    setError('')
+    try {
+      const { error: err } = await deleteGroup(activeGroupId)
+      if (err) throw err
+      setShowDelete(false)
+      await refreshGroups()
+      navigate('/app')
+    } catch (err) {
+      setError(friendlyError(err))
+    } finally {
+      setDeleting(false)
+    }
+  }
+
+  const canConfirmDelete = confirmName.trim() === (activeGroup?.name || '').trim()
 
   const emailHref = inviteUrl
     ? `mailto:?subject=${encodeURIComponent(
@@ -220,8 +249,55 @@ export default function Group() {
           </section>
 
           <EventTypesManager groupId={activeGroupId} />
+
+          <section className="card stack">
+            <h2 style={{ marginBottom: 0 }}>Danger zone</h2>
+            <p className="muted" style={{ margin: 0 }}>
+              Deleting this care team removes its events, tasks, notes, and
+              members for everyone. This cannot be undone.
+            </p>
+            <button
+              className="btn btn-danger btn-block"
+              onClick={() => {
+                setConfirmName('')
+                setShowDelete(true)
+              }}
+            >
+              Delete this care team
+            </button>
+          </section>
         </>
       )}
+
+      <Modal open={showDelete} onClose={() => setShowDelete(false)} title="Delete care team">
+        <div className="stack">
+          <p style={{ margin: 0 }}>
+            This permanently deletes <strong>{activeGroup?.name}</strong> and all
+            of its events, tasks, and notes. To confirm, type the team's name
+            below.
+          </p>
+          <label className="field" style={{ marginBottom: 0 }}>
+            <span className="field-label">Team name</span>
+            <input
+              className="input"
+              value={confirmName}
+              onChange={(e) => setConfirmName(e.target.value)}
+              placeholder={activeGroup?.name}
+              autoComplete="off"
+            />
+          </label>
+          <button
+            className="btn btn-danger btn-block btn-lg"
+            onClick={handleDeleteGroup}
+            disabled={!canConfirmDelete || deleting}
+          >
+            {deleting ? 'Deleting…' : 'Delete forever'}
+          </button>
+          <button className="btn btn-ghost btn-block" onClick={() => setShowDelete(false)}>
+            Cancel
+          </button>
+        </div>
+      </Modal>
     </div>
   )
 }

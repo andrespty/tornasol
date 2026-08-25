@@ -11,6 +11,7 @@ import {
 import { useRealtimeRefresh } from '../../hooks/useRealtimeRefresh'
 import { InlineLoading } from '../../components/Loading'
 import Avatar from '../../components/Avatar'
+import SelectSheet from '../../components/SelectSheet'
 import { friendlyError } from '../../lib/errors'
 import { CheckIcon, TrashIcon } from '../../components/icons'
 
@@ -120,21 +121,23 @@ export default function Tasks() {
             required
           />
         </label>
-        <label className="field" style={{ marginBottom: 0 }}>
+        <div className="field" style={{ marginBottom: 0 }}>
           <span className="field-label">Who's it for?</span>
-          <select
-            className="select"
+          <SelectSheet
+            title="Who's it for?"
+            hasAvatars
             value={assignee}
-            onChange={(e) => setAssignee(e.target.value)}
-          >
-            <option value="">Anyone (shared)</option>
-            {members.map((m) => (
-              <option key={m.userId} value={m.userId}>
-                {m.userId === user?.id ? 'Me' : m.name}
-              </option>
-            ))}
-          </select>
-        </label>
+            onChange={setAssignee}
+            options={[
+              { value: '', label: 'Anyone (shared)' },
+              ...members.map((m) => ({
+                value: m.userId,
+                label: m.userId === user?.id ? 'Me' : m.name,
+                initials: m.initials,
+              })),
+            ]}
+          />
+        </div>
         <button className="btn btn-primary btn-block" disabled={busy}>
           {busy ? 'Adding…' : 'Add task'}
         </button>
