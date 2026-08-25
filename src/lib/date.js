@@ -80,6 +80,12 @@ export function formatTimeRange(start, end) {
   return `${formatTime(start)} – ${formatTime(end)}`
 }
 
+// "All day" for all-day events, otherwise the time range.
+export function formatEventWhen(ev) {
+  if (ev?.all_day) return 'All day'
+  return formatTimeRange(ev.start_time, ev.end_time)
+}
+
 export function formatMonthYear(date) {
   return new Date(date).toLocaleDateString(undefined, {
     month: 'long',

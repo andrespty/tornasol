@@ -13,7 +13,7 @@ import {
   addNote,
   deleteNote,
 } from '../lib/api'
-import { formatDayLong, formatTimeRange, formatDateShort, formatTime } from '../lib/date'
+import { formatDayLong, formatEventWhen, formatDateShort, formatTime } from '../lib/date'
 import { friendlyError } from '../lib/errors'
 
 export default function EventDetailModal({
@@ -133,10 +133,9 @@ export default function EventDetailModal({
               {event.type.name}
             </span>
           )}
+          {event.title && <div className="event-detail-title">{event.title}</div>}
           <div className="shift-detail-day">{formatDayLong(event.start_time)}</div>
-          <div className="shift-detail-time">
-            {formatTimeRange(event.start_time, event.end_time)}
-          </div>
+          <div className="shift-detail-time">{formatEventWhen(event)}</div>
           {event.series_id && (
             <p className="muted" style={{ marginTop: 'var(--space-1)', marginBottom: 0 }}>
               Part of a weekly series — this is just this week.

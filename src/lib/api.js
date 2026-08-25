@@ -97,7 +97,10 @@ export async function deleteEventType(typeId) {
 export async function fetchEvents(groupId) {
   return supabase
     .from('events')
-    .select('id, group_id, series_id, start_time, end_time, capacity, created_by, event_type_id, type:event_types(id, name, color)')
+    .select(
+      'id, group_id, series_id, title, all_day, start_time, end_time, capacity, ' +
+        'created_by, event_type_id, type:event_types(id, name, color)'
+    )
     .eq('group_id', groupId)
     .order('start_time', { ascending: true })
 }

@@ -14,7 +14,7 @@ import {
   formatDayLong,
   formatDateShort,
   formatMonthYear,
-  formatTimeRange,
+  formatEventWhen,
   DAY_NAMES_SHORT,
 } from '../../lib/date'
 import { InlineLoading } from '../../components/Loading'
@@ -27,7 +27,7 @@ export default function Calendar() {
   const { user } = useAuth()
   const { activeGroupId, isAdmin, canCreateEvent } = useGroups()
 
-  const [view, setView] = useState('week')
+  const [view, setView] = useState('month')
   const [anchor, setAnchor] = useState(() => startOfDay(new Date()))
   const [selectedDay, setSelectedDay] = useState(() => startOfDay(new Date()))
   const [events, setEvents] = useState([])
@@ -222,13 +222,14 @@ function EventCard({ ev, attendeeIdsByEvent, memberById, user, onOpen }) {
       style={{ borderLeftColor: ev.type?.color || 'var(--color-border)' }}
     >
       <div className="event-card-top">
-        <span className="event-card-time">{formatTimeRange(ev.start_time, ev.end_time)}</span>
+        <span className="event-card-time">{formatEventWhen(ev)}</span>
         {ev.type && (
           <span className="type-badge" style={{ backgroundColor: ev.type.color }}>
             {ev.type.name}
           </span>
         )}
       </div>
+      {ev.title && <div className="event-card-title">{ev.title}</div>}
       <div className="event-card-bottom">
         <span className={`pill ${isFull ? 'pill-taken' : 'pill-open'}`}>
           {isFull ? 'Full' : `${ids.length} / ${ev.capacity}`}
