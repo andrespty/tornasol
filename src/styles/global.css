@@ -1717,3 +1717,107 @@ img {
   text-overflow: ellipsis;
   white-space: nowrap;
 }
+
+/* ============================================================
+   Event titles, stepper, time wheels
+   ============================================================ */
+
+.event-card-title {
+  font-weight: 700;
+  font-size: 1.05rem;
+  color: var(--color-text-primary);
+}
+
+.event-detail-title {
+  font-family: var(--font-heading);
+  font-size: 1.5rem;
+  font-weight: 600;
+  margin-top: var(--space-1);
+}
+
+/* Number stepper */
+.stepper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  background: var(--color-surface);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-button);
+  padding: 6px;
+}
+
+.stepper-btn {
+  width: 52px;
+  height: 52px;
+  flex-shrink: 0;
+  border-radius: 12px;
+  border: none;
+  background: var(--color-notes-bg);
+  color: var(--color-accent-dark);
+  font-size: 1.8rem;
+  line-height: 1;
+  cursor: pointer;
+}
+
+.stepper-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+.stepper-value {
+  flex: 1;
+  text-align: center;
+  font-size: 1.3rem;
+  font-weight: 700;
+}
+
+/* Time wheels */
+.wheels {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-1);
+}
+
+.wheel {
+  height: 210px;
+  overflow-y: auto;
+  scroll-snap-type: y mandatory;
+  display: flex;
+  flex-direction: column;
+  padding: 82px 0;
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-button);
+  background: var(--color-surface);
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.wheel::-webkit-scrollbar {
+  display: none;
+}
+
+.wheel-item {
+  scroll-snap-align: center;
+  min-height: 46px;
+  min-width: 72px;
+  padding: 0 var(--space-2);
+  border: none;
+  background: none;
+  font-family: var(--font-body);
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+  cursor: pointer;
+}
+
+.wheel-item.is-selected {
+  color: var(--color-primary);
+  font-size: 1.6rem;
+}
+
+.wheel-sep {
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--color-text-secondary);
+}
