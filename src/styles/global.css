@@ -1597,12 +1597,6 @@ img {
 }
 
 .type-item {
-  padding: var(--space-2);
-  border: 1px solid var(--color-border);
-  border-radius: var(--radius-button);
-}
-
-.type-item-head {
   display: flex;
   align-items: center;
   gap: var(--space-1);
@@ -1613,27 +1607,113 @@ img {
   min-width: 0;
 }
 
-.swatch-row {
-  display: flex;
-  flex-wrap: wrap;
-  gap: var(--space-1);
-}
-
-.swatch {
-  width: 36px;
-  height: 36px;
+/* Round color chip shown to the left of a type name; opens the color modal. */
+.color-dot {
+  width: 40px;
+  height: 40px;
+  flex-shrink: 0;
   border-radius: 50%;
-  border: 3px solid transparent;
+  border: 2px solid var(--color-surface);
+  box-shadow: 0 0 0 1px var(--color-border);
   cursor: pointer;
   padding: 0;
-}
-
-.swatch.is-selected {
-  border-color: var(--color-text-primary);
-  box-shadow: 0 0 0 2px var(--color-surface) inset;
 }
 
 .type-add {
   border-top: 1px solid var(--color-border);
   padding-top: var(--space-2);
+}
+
+.type-add-row {
+  margin-top: 0;
+}
+
+/* Modal color grid */
+.swatch-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(56px, 1fr));
+  gap: var(--space-2);
+}
+
+.swatch-lg {
+  aspect-ratio: 1 / 1;
+  min-height: 56px;
+  border-radius: 50%;
+  border: 4px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.swatch-lg.is-selected {
+  border-color: var(--color-text-primary);
+  box-shadow: 0 0 0 3px var(--color-surface) inset;
+}
+
+/* Non-native select (SelectSheet) */
+.select-sheet-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-1);
+  text-align: left;
+  cursor: pointer;
+}
+
+.select-sheet-value {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  min-width: 0;
+}
+
+.select-sheet-label {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.select-sheet-chevron {
+  color: var(--color-primary);
+  flex-shrink: 0;
+}
+
+.sheet-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.sheet-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  gap: var(--space-2);
+  min-height: 56px;
+  padding: var(--space-2);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-button);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 1.1rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  text-align: left;
+}
+
+.sheet-item.is-active {
+  border-color: var(--color-secondary);
+  background: rgba(15, 110, 86, 0.06);
+  color: var(--color-secondary);
+}
+
+.sheet-item-label {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }

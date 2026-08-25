@@ -49,6 +49,10 @@ export async function updateGroupSetting(groupId, patch) {
   return supabase.from('groups').update(patch).eq('id', groupId)
 }
 
+export async function deleteGroup(groupId) {
+  return supabase.from('groups').delete().eq('id', groupId)
+}
+
 /* ---------------- Invites ---------------- */
 
 export async function createInvite(groupId, userId, days = 14) {

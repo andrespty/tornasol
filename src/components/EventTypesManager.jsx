@@ -5,26 +5,21 @@ import {
   updateEventType,
   deleteEventType,
 } from '../lib/api'
-import { EVENT_COLORS, DEFAULT_EVENT_COLOR } from '../lib/eventColors'
+import { EVENT_COLORS } from '../lib/eventColors'
 import { friendlyError } from '../lib/errors'
 import { InlineLoading } from './Loading'
+import ColorPickerModal from './ColorPickerModal'
 import { TrashIcon, PlusIcon } from './icons'
 
-function ColorSwatches({ value, onChange }) {
+function ColorDot({ color, onClick, label }) {
   return (
-    <div className="swatch-row" role="radiogroup" aria-label="Color">
-      {EVENT_COLORS.map((c) => (
-        <button
-          key={c.value}
-          type="button"
-          className={`swatch${value === c.value ? ' is-selected' : ''}`}
-          style={{ backgroundColor: c.value }}
-          aria-label={c.name}
-          aria-pressed={value === c.value}
-          onClick={() => onChange(c.value)}
-        />
-      ))}
-    </div>
+    <button
+      type="button"
+      className="color-dot"
+      style={{ backgroundColor: color }}
+      onClick={onClick}
+      aria-label={label}
+    />
   )
 }
 
@@ -35,6 +30,8 @@ export default function EventTypesManager({ groupId }) {
   const [newName, setNewName] = useState('')
   const [newColor, setNewColor] = useState(EVENT_COLORS[0].value)
   const [busy, setBusy] = useState(false)
+  // Which color picker is open: a type id, or 'new', or null.
+  const [colorEditing, setColorEditing] = useState(null)
 
   const load = useCallback(async () => {
     const { data } = await fetchEventTypes(groupId)
@@ -70,9 +67,9 @@ export default function EventTypesManager({ groupId }) {
     }
   }
 
-  async function recolor(type, color) {
-    setTypes((prev) => prev.map((t) => (t.id === type.id ? { ...t, color } : t)))
-    await updateEventType(type.id, { color })
+  async function recolor(typeId, color) {
+    setTypes((prev) => prev.map((t) => (t.id === typeId ? { ...t, color } : t)))
+    await updateEventType(typeId, { color })
   }
 
   async function rename(type, name) {
@@ -91,11 +88,22 @@ export default function EventTypesManager({ groupId }) {
     else load()
   }
 
+  // The color currently shown in the open picker.
+  const editingColor =
+    colorEditing === 'new'
+      ? newColor
+      : types.find((t) => t.id === colorEditing)?.color
+
+  function applyColor(color) {
+    if (colorEditing === 'new') setNewColor(color)
+    else if (colorEditing) recolor(colorEditing, color)
+  }
+
   return (
     <section className="card stack">
       <h2 style={{ marginBottom: 0 }}>Event types</h2>
       <p className="muted" style={{ margin: 0 }}>
-        Categories for your events, each with a color.
+        Categories for your events. Tap the color to change it.
       </p>
 
       {error && (
@@ -109,47 +117,62 @@ export default function EventTypesManager({ groupId }) {
       ) : (
         <ul className="type-list">
           {types.map((t) => (
-            <li key={t.id} className="type-item stack">
-              <div className="type-item-head">
-                <input
-                  className="input type-name-input"
-                  defaultValue={t.name}
-                  aria-label="Type name"
-                  onBlur={(e) => {
-                    const v = e.target.value.trim()
-                    if (v && v !== t.name) rename(t, v)
-                  }}
-                />
-                <button
-                  className="icon-btn"
-                  aria-label={`Delete ${t.name}`}
-                  onClick={() => remove(t)}
-                >
-                  <TrashIcon />
-                </button>
-              </div>
-              <ColorSwatches value={t.color} onChange={(c) => recolor(t, c)} />
+            <li key={t.id} className="type-item">
+              <ColorDot
+                color={t.color}
+                label={`Change color for ${t.name}`}
+                onClick={() => setColorEditing(t.id)}
+              />
+              <input
+                className="input type-name-input"
+                defaultValue={t.name}
+                aria-label="Type name"
+                onBlur={(e) => {
+                  const v = e.target.value.trim()
+                  if (v && v !== t.name) rename(t, v)
+                }}
+              />
+              <button className="icon-btn" aria-label={`Delete ${t.name}`} onClick={() => remove(t)}>
+                <TrashIcon />
+              </button>
             </li>
           ))}
         </ul>
       )}
 
-      <form onSubmit={handleAdd} className="stack type-add">
-        <label className="field" style={{ marginBottom: 0 }}>
-          <span className="field-label">Add a type</span>
+      <form onSubmit={handleAdd} className="type-add">
+        <span className="field-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>
+          Add a type
+        </span>
+        <div className="type-item type-add-row">
+          <ColorDot
+            color={newColor}
+            label="Choose color for new type"
+            onClick={() => setColorEditing('new')}
+          />
           <input
-            className="input"
+            className="input type-name-input"
             type="text"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
             placeholder="e.g. Meal time"
           />
-        </label>
-        <ColorSwatches value={newColor} onChange={setNewColor} />
-        <button className="btn btn-secondary btn-block" disabled={busy || !newName.trim()}>
-          <PlusIcon width={20} height={20} /> Add type
-        </button>
+          <button
+            className="btn btn-secondary btn-sm"
+            disabled={busy || !newName.trim()}
+            aria-label="Add type"
+          >
+            <PlusIcon width={20} height={20} />
+          </button>
+        </div>
       </form>
+
+      <ColorPickerModal
+        open={colorEditing !== null}
+        value={editingColor}
+        onPick={applyColor}
+        onClose={() => setColorEditing(null)}
+      />
     </section>
   )
 }
