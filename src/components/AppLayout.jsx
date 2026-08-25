@@ -3,6 +3,7 @@ import { useAuth } from '../context/AuthContext'
 import { useGroups } from '../context/GroupContext'
 import Avatar from './Avatar'
 import NoGroupGate from './NoGroupGate'
+import GroupSwitcher from './GroupSwitcher'
 import { SunIcon, CalendarIcon, TasksIcon, NotesIcon, PeopleIcon, HomeIcon } from './icons'
 
 const NAV = [
@@ -15,7 +16,7 @@ const NAV = [
 
 export default function AppLayout() {
   const { profile, user } = useAuth()
-  const { activeGroup, groups, setActiveGroupId, hasNoGroups } = useGroups()
+  const { hasNoGroups } = useGroups()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -34,39 +35,24 @@ export default function AppLayout() {
           aria-label="Tornasol home"
         >
           <SunIcon />
-          <span>Tornasol</span>
+          <span className="app-brand-name">Tornasol</span>
         </button>
 
-        <div className="app-header-right">
-          {groups.length > 0 && (
-            <label className="group-switch">
-              <span className="visually-hidden">Active care group</span>
-              <select
-                className="select group-select"
-                value={activeGroup?.id || ''}
-                onChange={(e) => setActiveGroupId(e.target.value)}
-              >
-                {groups.map((g) => (
-                  <option key={g.id} value={g.id}>
-                    {g.name}
-                  </option>
-                ))}
-              </select>
-            </label>
-          )}
-
-          <button
-            type="button"
-            className="profile-btn"
-            onClick={() => navigate('/app/profile')}
-            aria-label="Your profile and settings"
-          >
-            <Avatar
-              name={profile?.display_name || user?.email}
-              initials={profile?.avatar_initials}
-            />
-          </button>
+        <div className="app-header-center">
+          <GroupSwitcher />
         </div>
+
+        <button
+          type="button"
+          className="profile-btn"
+          onClick={() => navigate('/app/profile')}
+          aria-label="Your profile and settings"
+        >
+          <Avatar
+            name={profile?.display_name || user?.email}
+            initials={profile?.avatar_initials}
+          />
+        </button>
       </header>
 
       <main className="app-main">

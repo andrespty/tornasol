@@ -505,22 +505,93 @@ img {
   font-weight: 600;
   color: var(--color-text-primary);
   padding: 4px;
+  flex-shrink: 0;
 }
 
-.group-name-tag {
-  font-weight: 700;
-  color: var(--color-text-secondary);
-  max-width: 45vw;
+/* Centered care-group switcher */
+.app-header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  min-width: 0;
+  padding: 0 var(--space-1);
+}
+
+.group-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-1);
+  max-width: 100%;
+  min-height: 48px;
+  padding: 8px var(--space-2);
+  border-radius: var(--radius-pill);
+  border: 2px solid var(--color-border);
+  background: var(--color-surface);
+  box-shadow: var(--shadow-card);
+  cursor: pointer;
+  font-family: var(--font-heading);
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: var(--color-text-primary);
+}
+
+.group-pill-static {
+  cursor: default;
+  border-style: dashed;
+  box-shadow: none;
+}
+
+.group-pill-name {
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
-.group-select {
-  min-height: 44px;
-  max-width: 55vw;
+.group-pill-chevron {
+  color: var(--color-primary);
   font-size: 1rem;
-  padding: 6px var(--space-2);
+  flex-shrink: 0;
+}
+
+/* Bottom-sheet group list */
+.switcher-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.switcher-item {
+  width: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+  min-height: 60px;
+  padding: var(--space-2) var(--space-3);
+  border: 2px solid var(--color-border);
+  border-radius: var(--radius-button);
+  background: var(--color-surface);
+  cursor: pointer;
+  font-family: var(--font-body);
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: var(--color-text-primary);
+  text-align: left;
+}
+
+.switcher-item.is-active {
+  border-color: var(--color-secondary);
+  background: rgba(15, 110, 86, 0.06);
+  color: var(--color-secondary);
+}
+
+.switcher-item-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .app-main {
@@ -849,13 +920,13 @@ img {
 
 .month-grid {
   display: grid;
-  grid-template-columns: repeat(7, 1fr);
-  gap: 4px;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 5px;
 }
 
 .month-dow {
   text-align: center;
-  font-size: 0.8rem;
+  font-size: 0.75rem;
   font-weight: 700;
   color: var(--color-text-secondary);
   padding-bottom: 4px;
@@ -863,12 +934,13 @@ img {
 
 .month-cell {
   aspect-ratio: 1 / 1;
-  min-height: 44px;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: 4px;
+  gap: 5px;
+  padding: 2px;
   border: 2px solid transparent;
   border-radius: 12px;
   background: var(--color-surface);
@@ -1271,19 +1343,8 @@ img {
 }
 
 /* ============================================================
-   Header right cluster: group switcher + profile button
+   Header profile button
    ============================================================ */
-
-.app-header-right {
-  display: flex;
-  align-items: center;
-  gap: var(--space-1);
-  min-width: 0;
-}
-
-.app-header-right .group-select {
-  max-width: 42vw;
-}
 
 .profile-btn {
   display: inline-flex;
@@ -1367,4 +1428,55 @@ img {
 
 .group-list-switch {
   font-size: 0.95rem;
+}
+
+/* ============================================================
+   Mobile refinements
+   ============================================================ */
+
+@media (max-width: 430px) {
+  /* Give the centered group switcher room by hiding the wordmark. */
+  .app-brand-name {
+    display: none;
+  }
+
+  .app-header {
+    gap: var(--space-1);
+    padding-left: var(--space-1);
+    padding-right: var(--space-1);
+  }
+
+  /* Slightly smaller headings so they don't wrap awkwardly. */
+  h1 {
+    font-size: 1.6rem;
+  }
+  h2 {
+    font-size: 1.3rem;
+  }
+
+  .page {
+    padding-top: var(--space-2);
+  }
+
+  /* Month grid: let the cells breathe edge-to-edge and stay tappable. */
+  .container:has(.month-grid) {
+    padding-left: var(--space-1);
+    padding-right: var(--space-1);
+  }
+
+  .month-grid {
+    gap: 4px;
+  }
+
+  .month-cell {
+    border-radius: 10px;
+  }
+
+  .month-cell-num {
+    font-size: 0.95rem;
+  }
+
+  .group-pill {
+    font-size: 1.05rem;
+  }
 }
