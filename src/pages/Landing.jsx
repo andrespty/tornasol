@@ -26,7 +26,7 @@ export default function Landing() {
         <div className="card landing-card stack">
           <p>
             Tornasol helps your family take turns caring for a parent, partner,
-            or friend. See who is on today, take a shift when you can, and leave
+            or friend. See who is on today, sign up for an event when you can, and leave
             a note for whoever comes next.
           </p>
           <p className="muted">

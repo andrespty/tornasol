@@ -62,66 +62,123 @@ export async function createInvite(groupId, userId, days = 14) {
   return { data, error }
 }
 
-/* ---------------- Shifts ---------------- */
+/* ---------------- Event types ---------------- */
 
-export async function fetchShifts(groupId) {
+export async function fetchEventTypes(groupId) {
   return supabase
-    .from('shifts')
-    .select('*')
+    .from('event_types')
+    .select('id, name, color, sort_order')
+    .eq('group_id', groupId)
+    .order('sort_order', { ascending: true })
+}
+
+export async function createEventType(groupId, { name, color, sortOrder = 0 }) {
+  return supabase
+    .from('event_types')
+    .insert({ group_id: groupId, name, color, sort_order: sortOrder })
+    .select()
+    .single()
+}
+
+export async function updateEventType(typeId, patch) {
+  return supabase.from('event_types').update(patch).eq('id', typeId)
+}
+
+export async function deleteEventType(typeId) {
+  return supabase.from('event_types').delete().eq('id', typeId)
+}
+
+/* ---------------- Events ---------------- */
+
+export async function fetchEvents(groupId) {
+  return supabase
+    .from('events')
+    .select('id, group_id, series_id, start_time, end_time, capacity, created_by, event_type_id, type:event_types(id, name, color)')
     .eq('group_id', groupId)
     .order('start_time', { ascending: true })
 }
 
-export async function createShift(shift) {
-  return supabase.from('shifts').insert(shift).select().single()
+/**
+ * Insert one or more event rows (weekly repeats materialize into separate
+ * rows sharing a series_id, so each occurrence is signed up independently).
+ */
+export async function createEvents(rows) {
+  return supabase.from('events').insert(rows).select()
 }
 
-export async function claimShift(shiftId, userId) {
-  return supabase.from('shifts').update({ assigned_user_id: userId }).eq('id', shiftId)
+export async function fetchAttendeesForGroup(groupId) {
+  // Attendees across all of a group's events, resolved to names via the
+  // members list (event_attendees.user_id -> auth.users, so no direct embed).
+  const { data, error } = await supabase
+    .from('event_attendees')
+    .select('event_id, user_id, event:events!inner(group_id)')
+    .eq('event.group_id', groupId)
+  if (error) return { data: [], error }
+  return { data: data || [], error: null }
 }
 
-export async function releaseShift(shiftId) {
-  return supabase.from('shifts').update({ assigned_user_id: null }).eq('id', shiftId)
+export async function signUpForEvent(eventId, userId) {
+  return supabase.from('event_attendees').insert({ event_id: eventId, user_id: userId })
 }
 
-export async function deleteShift(shiftId) {
-  return supabase.from('shifts').delete().eq('id', shiftId)
+export async function giveUpSpot(eventId, userId) {
+  return supabase
+    .from('event_attendees')
+    .delete()
+    .eq('event_id', eventId)
+    .eq('user_id', userId)
+}
+
+export async function transferSpot(eventId, toUserId) {
+  return supabase.rpc('transfer_attendance', { p_event_id: eventId, p_to_user: toUserId })
+}
+
+export async function deleteEvent(eventId) {
+  return supabase.from('events').delete().eq('id', eventId)
+}
+
+export async function deleteEventSeriesFrom(seriesId, fromISO) {
+  return supabase
+    .from('events')
+    .delete()
+    .eq('series_id', seriesId)
+    .gte('start_time', fromISO)
 }
 
 /* ---------------- Handoff notes ---------------- */
 
 export async function fetchNotesForGroup(groupId) {
-  // Notes for all shifts in the group, newest first, with author + shift time.
+  // Notes for all events in the group, newest first, with author + event time.
   const { data, error } = await supabase
-    .from('shift_notes')
+    .from('event_notes')
     .select(
       'id, content, created_at, author_id, ' +
         'author:profiles(display_name, email, avatar_initials), ' +
-        'shift:shifts!inner(id, group_id, start_time, end_time)'
+        'event:events!inner(id, group_id, start_time, end_time)'
     )
-    .eq('shift.group_id', groupId)
+    .eq('event.group_id', groupId)
     .order('created_at', { ascending: false })
   return { data: data || [], error }
 }
 
-export async function fetchNotesForShift(shiftId) {
+export async function fetchNotesForEvent(eventId) {
   return supabase
-    .from('shift_notes')
+    .from('event_notes')
     .select('id, content, created_at, author_id, author:profiles(display_name, email, avatar_initials)')
-    .eq('shift_id', shiftId)
+    .eq('event_id', eventId)
     .order('created_at', { ascending: true })
 }
 
-export async function addNote(shiftId, authorId, content) {
+export async function addNote(eventId, authorId, content) {
   return supabase
-    .from('shift_notes')
-    .insert({ shift_id: shiftId, author_id: authorId, content })
+    .from('event_notes')
+    .insert({ event_id: eventId, author_id: authorId, content })
     .select('id, content, created_at, author_id')
     .single()
 }
 
 export async function deleteNote(noteId) {
-  return supabase.from('shift_notes').delete().eq('id', noteId)
+  return supabase.from('event_notes').delete().eq('id', noteId)
 }
 
 /* ---------------- Tasks ---------------- */

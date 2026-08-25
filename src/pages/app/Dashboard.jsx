@@ -16,7 +16,7 @@ export default function Dashboard() {
       <div className="card center stack">
         <h2 style={{ marginBottom: 0 }}>Your summary is coming soon</h2>
         <p className="muted" style={{ marginBottom: 0 }}>
-          Today's shifts, tasks, and recent notes will show up here. For now, use
+          Today's events, tasks, and recent notes will show up here. For now, use
           the tabs below to get around.
         </p>
       </div>

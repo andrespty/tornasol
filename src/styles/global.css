@@ -1480,3 +1480,160 @@ img {
     font-size: 1.05rem;
   }
 }
+
+/* ============================================================
+   Events: type badges, event cards, attendees, type manager
+   ============================================================ */
+
+.type-badge {
+  display: inline-block;
+  padding: 3px 12px;
+  border-radius: var(--radius-pill);
+  font-size: 0.85rem;
+  font-weight: 700;
+  color: #fff;
+  line-height: 1.3;
+  max-width: 100%;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.event-card {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+  width: 100%;
+  text-align: left;
+  cursor: pointer;
+  padding: var(--space-2) var(--space-3);
+  border-left: 6px solid var(--color-border);
+  transition: transform 120ms var(--motion-ease), box-shadow var(--motion-duration) var(--motion-ease);
+}
+
+.event-card:active {
+  transform: scale(0.99);
+}
+.event-card:hover {
+  box-shadow: var(--shadow-raised);
+}
+
+.event-card-top {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.event-card-time {
+  font-weight: 700;
+  font-size: 1.1rem;
+}
+
+.event-card-bottom {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  flex-wrap: wrap;
+}
+
+.attendee-avatars {
+  display: inline-flex;
+}
+
+.attendee-avatars .avatar {
+  margin-left: -8px;
+  border: 2px solid var(--color-surface);
+}
+.attendee-avatars .avatar:first-child {
+  margin-left: 0;
+}
+
+.attendee-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.attendee-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-1);
+}
+
+.attendee-item {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+  font-weight: 700;
+}
+
+.transfer-row {
+  display: flex;
+  gap: var(--space-1);
+  align-items: stretch;
+}
+.transfer-row .select {
+  flex: 1;
+  min-width: 0;
+}
+.transfer-row .btn {
+  flex-shrink: 0;
+}
+
+/* Event type manager */
+
+.type-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-2);
+}
+
+.type-item {
+  padding: var(--space-2);
+  border: 1px solid var(--color-border);
+  border-radius: var(--radius-button);
+}
+
+.type-item-head {
+  display: flex;
+  align-items: center;
+  gap: var(--space-1);
+}
+
+.type-name-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.swatch-row {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--space-1);
+}
+
+.swatch {
+  width: 36px;
+  height: 36px;
+  border-radius: 50%;
+  border: 3px solid transparent;
+  cursor: pointer;
+  padding: 0;
+}
+
+.swatch.is-selected {
+  border-color: var(--color-text-primary);
+  box-shadow: 0 0 0 2px var(--color-surface) inset;
+}
+
+.type-add {
+  border-top: 1px solid var(--color-border);
+  padding-top: var(--space-2);
+}

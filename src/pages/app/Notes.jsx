@@ -23,9 +23,9 @@ export default function Notes() {
     load()
   }, [load])
 
-  // shift_notes has no group_id column, so watch the whole table and refetch.
+  // event_notes has no group_id column, so watch the whole table and refetch.
   useRealtimeRefresh(
-    'shift_notes',
+    'event_notes',
     { channelKey: `notes-${activeGroupId}`, enabled: !!activeGroupId },
     load
   )
@@ -37,7 +37,7 @@ export default function Notes() {
         <h1>Handoff notes</h1>
         <p className="muted">
           A shared log of what's happened, newest first. Add notes from any
-          shift on the calendar.
+          event on the calendar.
         </p>
       </div>
 
@@ -46,7 +46,7 @@ export default function Notes() {
       ) : notes.length === 0 ? (
         <div className="card">
           <p style={{ marginBottom: 0 }}>
-            No notes yet. Open a shift on the calendar to leave the first one.
+            No notes yet. Open an event on the calendar to leave the first one.
           </p>
         </div>
       ) : (
@@ -55,10 +55,10 @@ export default function Notes() {
             const author = n.author?.display_name || n.author?.email || 'Member'
             return (
               <li key={n.id} className="card card-notes note-item">
-                {n.shift && (
+                {n.event && (
                   <div className="note-shift-label">
-                    Shift · {formatDateShort(n.shift.start_time)}{' '}
-                    {formatTimeRange(n.shift.start_time, n.shift.end_time)}
+                    {formatDateShort(n.event.start_time)}{' '}
+                    {formatTimeRange(n.event.start_time, n.event.end_time)}
                   </div>
                 )}
                 <p style={{ whiteSpace: 'pre-wrap', margin: 'var(--space-1) 0' }}>{n.content}</p>

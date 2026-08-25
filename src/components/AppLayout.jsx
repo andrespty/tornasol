@@ -8,7 +8,7 @@ import { SunIcon, CalendarIcon, TasksIcon, NotesIcon, PeopleIcon, HomeIcon } fro
 
 const NAV = [
   { to: '/app', label: 'Home', icon: HomeIcon, end: true },
-  { to: '/app/calendar', label: 'Shifts', icon: CalendarIcon },
+  { to: '/app/calendar', label: 'Events', icon: CalendarIcon },
   { to: '/app/tasks', label: 'Tasks', icon: TasksIcon },
   { to: '/app/notes', label: 'Notes', icon: NotesIcon },
   { to: '/app/group', label: 'Group', icon: PeopleIcon },
