@@ -1948,3 +1948,36 @@ img {
 .share-week-btn {
   margin-bottom: var(--space-3);
 }
+
+/* Event detail header with a compact share icon */
+.event-detail-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: var(--space-2);
+}
+
+.share-icon-btn {
+  width: 48px;
+  height: 48px;
+  flex-shrink: 0;
+  border-radius: 50%;
+  border: none;
+  background: #25d366;
+  color: #073b28;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 120ms var(--motion-ease), background-color var(--motion-duration) var(--motion-ease);
+}
+.share-icon-btn:hover {
+  background: #1fb855;
+}
+.share-icon-btn:active {
+  transform: scale(0.94);
+}
+
+.share-week-inline {
+  align-self: flex-start;
+}
