@@ -1932,3 +1932,19 @@ img {
   stroke: var(--color-accent-light);
   flex-shrink: 0;
 }
+
+/* WhatsApp share button */
+.btn-whatsapp {
+  background: #25d366;
+  color: #073b28;
+}
+.btn-whatsapp:hover:not(:disabled) {
+  background: #1fb855;
+}
+.btn-whatsapp svg {
+  color: #073b28;
+}
+
+.share-week-btn {
+  margin-bottom: var(--space-3);
+}

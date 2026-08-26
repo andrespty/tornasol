@@ -14,6 +14,8 @@ import {
   deleteNote,
 } from '../lib/api'
 import { formatDayLong, formatEventWhen, formatDateShort, formatTime } from '../lib/date'
+import { openWhatsApp, buildEventShareText } from '../lib/share'
+import { WhatsAppIcon } from './icons'
 import { friendlyError } from '../lib/errors'
 
 export default function EventDetailModal({
@@ -64,6 +66,21 @@ export default function EventDetailModal({
   )
 
   if (!event) return null
+
+  function shareToWhatsApp() {
+    const url = `${window.location.origin}/app/calendar?event=${event.id}`
+    openWhatsApp(
+      buildEventShareText({
+        typeName: event.type?.name || 'Event',
+        title: event.title,
+        dayLine: formatDayLong(event.start_time),
+        whenLine: formatEventWhen(event),
+        signedUp: ids.length,
+        capacity: event.capacity,
+        url,
+      })
+    )
+  }
 
   async function run(fn) {
     setBusy(true)
@@ -142,6 +159,10 @@ export default function EventDetailModal({
             </p>
           )}
         </div>
+
+        <button type="button" className="btn btn-whatsapp btn-block" onClick={shareToWhatsApp}>
+          <WhatsAppIcon /> Share to WhatsApp
+        </button>
 
         {error && (
           <div className="alert alert-error" role="alert">
