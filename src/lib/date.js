@@ -93,6 +93,14 @@ export function formatMonthYear(date) {
   })
 }
 
+// Parse a Postgres `date` string ("YYYY-MM-DD") as a LOCAL calendar day
+// (avoids the UTC-midnight shift you get from new Date("YYYY-MM-DD")).
+export function parseDateOnly(str) {
+  if (!str) return null
+  const [y, m, d] = String(str).split('-').map(Number)
+  return new Date(y, (m || 1) - 1, d || 1)
+}
+
 // yyyy-mm-dd for a Postgres `date` column, using LOCAL calendar day.
 export function toDateOnly(date) {
   const d = new Date(date)
