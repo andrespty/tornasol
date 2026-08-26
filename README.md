@@ -91,10 +91,34 @@ npm run build
 npm run preview   # preview the production build locally
 ```
 
-Deploy the `dist/` folder to any static host (Netlify, Vercel, Cloudflare
-Pages, etc.). Make sure the host is configured for **SPA fallback** (serve
-`index.html` for unknown routes) so deep links like `/app/calendar` and
-`/invite/:token` work.
+Deploy the `dist/` folder to any static host. The host must be configured for
+**SPA fallback** (serve `index.html` for unknown routes) so deep links like
+`/app/calendar`, `/invite/:token`, and the WhatsApp share links
+(`/app/calendar?event=…`) work.
+
+### Deploying to Vercel
+
+The repo includes [`vercel.json`](vercel.json) (Vite preset + SPA rewrite), so
+setup is minimal:
+
+1. Push the repo to GitHub (already done).
+2. At [vercel.com](https://vercel.com) → **Add New → Project** → import this
+   repository. Vercel auto-detects Vite (build `npm run build`, output `dist`).
+3. Under **Environment Variables**, add:
+   - `VITE_SUPABASE_URL` — your Supabase project URL
+   - `VITE_SUPABASE_ANON_KEY` — your anon public key
+
+   (The anon key is safe to expose — it's public by design and RLS protects
+   the data.)
+4. **Deploy.** You'll get a URL like `https://tornasol.vercel.app`. Every push
+   to the branch redeploys automatically.
+5. In **Supabase → Authentication → URL Configuration**, add your Vercel URL to
+   **Site URL** / **Redirect URLs** (e.g. `https://tornasol.vercel.app` and
+   `https://tornasol.vercel.app/reset-password`) so sign-in and
+   password-reset links work in production.
+
+Once live, the WhatsApp "Share this week" / "Share event" links point at your
+Vercel URL and open the app for anyone in the family.
 
 ## Managing the database
 
