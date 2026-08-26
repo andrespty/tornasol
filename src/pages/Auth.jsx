@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, Navigate, useLocation, useNavigate } from 'react-router-dom'
 import { supabase, isSupabaseConfigured } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
+import { useI18n } from '../context/LanguageContext'
 import { friendlyError } from '../lib/errors'
 import { initialsFor } from '../components/Avatar'
 import Loading from '../components/Loading'
@@ -12,6 +13,7 @@ const MODES = { LOGIN: 'login', SIGNUP: 'signup', FORGOT: 'forgot' }
 
 export default function Auth() {
   const { isAuthenticated, loading } = useAuth()
+  const { t } = useI18n()
   const location = useLocation()
   const navigate = useNavigate()
 
@@ -28,7 +30,7 @@ export default function Auth() {
 
   const redirectTo = location.state?.from || '/app'
 
-  if (loading) return <Loading label="Opening Tornasol…" />
+  if (loading) return <Loading label={t('common.opening')} />
   if (isAuthenticated) return <Navigate to={redirectTo} replace />
   if (!isSupabaseConfigured) return <SetupNotice />
 
@@ -44,9 +46,7 @@ export default function Auth() {
           redirectTo: `${window.location.origin}/reset-password`,
         })
         if (err) throw err
-        setNotice(
-          'We sent you a link. Open it on this phone to reset your password.'
-        )
+        setNotice(t('auth.resetSent'))
         return
       }
 
@@ -69,9 +69,7 @@ export default function Auth() {
         // registered" and stop, rather than showing a confirmation message.
         const identities = data?.user?.identities
         if (Array.isArray(identities) && identities.length === 0) {
-          setError(
-            'There is already an account with this email. Try logging in instead.'
-          )
+          setError(t('auth.dupAccount'))
           return
         }
 
@@ -108,18 +106,17 @@ export default function Auth() {
     return (
       <div className="auth-page">
         <div className="container auth-inner">
-          <Link to="/" className="auth-brand" aria-label="Tornasol home">
+          <Link to="/" className="auth-brand" aria-label={t('nav.homeAria')}>
             <SunIcon width={44} height={44} />
             <span>Tornasol</span>
           </Link>
           <div className="card stack center">
-            <h1 style={{ marginBottom: 0 }}>Check your email</h1>
+            <h1 style={{ marginBottom: 0 }}>{t('auth.checkEmailTitle')}</h1>
             <div className="alert alert-success" role="status">
-              We sent a link to <strong>{email.trim()}</strong>. Open it on this
-              phone to finish setting up your account.
+              {t('auth.checkEmailMsg', { email: email.trim() })}
             </div>
             <p className="muted" style={{ marginBottom: 0 }}>
-              You can close this page — the link will bring you right back.
+              {t('auth.checkEmailHint')}
             </p>
           </div>
         </div>
@@ -130,13 +127,13 @@ export default function Auth() {
   return (
     <div className="auth-page">
       <div className="container auth-inner">
-        <Link to="/" className="auth-brand" aria-label="Tornasol home">
+        <Link to="/" className="auth-brand" aria-label={t('nav.homeAria')}>
           <SunIcon width={44} height={44} />
           <span>Tornasol</span>
         </Link>
 
         {!isForgot && (
-          <div className="segmented" role="tablist" aria-label="Log in or create account">
+          <div className="segmented" role="tablist">
             <button
               type="button"
               role="tab"
@@ -148,7 +145,7 @@ export default function Auth() {
                 setNotice('')
               }}
             >
-              Log in
+              {t('auth.tabLogin')}
             </button>
             <button
               type="button"
@@ -161,21 +158,17 @@ export default function Auth() {
                 setNotice('')
               }}
             >
-              Create account
+              {t('auth.tabSignup')}
             </button>
           </div>
         )}
 
         <div className="card stack">
           <h1 style={{ marginBottom: 0 }}>
-            {isForgot ? 'Reset your password' : isSignup ? 'Create your account' : 'Welcome back'}
+            {isForgot ? t('auth.resetTitle') : isSignup ? t('auth.signupTitle') : t('auth.welcome')}
           </h1>
 
-          {isForgot && (
-            <p className="muted">
-              Enter your email and we will send you a link to set a new password.
-            </p>
-          )}
+          {isForgot && <p className="muted">{t('auth.forgotIntro')}</p>}
 
           {error && (
             <div className="alert alert-error" role="alert">
@@ -191,21 +184,21 @@ export default function Auth() {
           <form onSubmit={handleSubmit} className="stack">
             {isSignup && (
               <label className="field">
-                <span className="field-label">Your name</span>
+                <span className="field-label">{t('auth.name')}</span>
                 <input
                   className="input"
                   type="text"
                   autoComplete="name"
                   value={name}
                   onChange={(e) => setName(e.target.value)}
-                  placeholder="e.g. Maria Lopez"
+                  placeholder={t('auth.namePlaceholder')}
                   required
                 />
               </label>
             )}
 
             <label className="field">
-              <span className="field-label">Email</span>
+              <span className="field-label">{t('auth.email')}</span>
               <input
                 className="input"
                 type="email"
@@ -220,14 +213,14 @@ export default function Auth() {
 
             {!isForgot && (
               <label className="field">
-                <span className="field-label">Password</span>
+                <span className="field-label">{t('auth.password')}</span>
                 <input
                   className="input"
                   type="password"
                   autoComplete={isSignup ? 'new-password' : 'current-password'}
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  placeholder={isSignup ? 'At least 6 characters' : 'Your password'}
+                  placeholder={isSignup ? t('auth.passwordNewPlaceholder') : t('auth.passwordPlaceholder')}
                   minLength={6}
                   required
                 />
@@ -240,12 +233,12 @@ export default function Auth() {
               disabled={busy}
             >
               {busy
-                ? 'Please wait…'
+                ? t('common.pleaseWait')
                 : isForgot
-                  ? 'Send reset link'
+                  ? t('auth.sendReset')
                   : isSignup
-                    ? 'Create account'
-                    : 'Log in'}
+                    ? t('auth.tabSignup')
+                    : t('auth.tabLogin')}
             </button>
           </form>
 
@@ -259,7 +252,7 @@ export default function Auth() {
                 setNotice('')
               }}
             >
-              Forgot your password?
+              {t('auth.forgot')}
             </button>
           ) : (
             <button
@@ -271,7 +264,7 @@ export default function Auth() {
                 setNotice('')
               }}
             >
-              ← Back to log in
+              {t('auth.backToLogin')}
             </button>
           )}
         </div>

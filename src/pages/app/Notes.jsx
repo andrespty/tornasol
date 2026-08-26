@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useGroups } from '../../context/GroupContext'
+import { useI18n } from '../../context/LanguageContext'
 import { fetchNotesForGroup } from '../../lib/api'
 import { useRealtimeRefresh } from '../../hooks/useRealtimeRefresh'
 import { InlineLoading } from '../../components/Loading'
@@ -8,6 +9,7 @@ import { formatDateShort, formatTime, formatTimeRange } from '../../lib/date'
 
 export default function Notes() {
   const { activeGroupId } = useGroups()
+  const { t } = useI18n()
   const [notes, setNotes] = useState([])
   const [loading, setLoading] = useState(true)
 
@@ -34,25 +36,20 @@ export default function Notes() {
   return (
     <div className="page stack-3">
       <div>
-        <h1>Handoff notes</h1>
-        <p className="muted">
-          A shared log of what's happened, newest first. Add notes from any
-          event on the calendar.
-        </p>
+        <h1>{t('notes.title')}</h1>
+        <p className="muted">{t('notes.intro')}</p>
       </div>
 
       {loading ? (
-        <InlineLoading label="Loading notes…" />
+        <InlineLoading label={t('common.loadingNotes')} />
       ) : notes.length === 0 ? (
         <div className="card">
-          <p style={{ marginBottom: 0 }}>
-            No notes yet. Open an event on the calendar to leave the first one.
-          </p>
+          <p style={{ marginBottom: 0 }}>{t('notes.empty')}</p>
         </div>
       ) : (
         <ul className="note-list">
           {notes.map((n) => {
-            const author = n.author?.display_name || n.author?.email || 'Member'
+            const author = n.author?.display_name || n.author?.email || t('common.member')
             return (
               <li key={n.id} className="card card-notes note-item">
                 {n.event && (

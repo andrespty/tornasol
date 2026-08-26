@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import Modal from './Modal'
+import { useI18n } from '../context/LanguageContext'
 import {
   startOfDay,
   startOfMonth,
@@ -9,7 +10,7 @@ import {
   isToday,
   formatDayLong,
   formatMonthYear,
-  DAY_NAMES_SHORT,
+  shortWeekdays,
 } from '../lib/date'
 
 /** Non-native date picker: a button that opens a tappable month calendar.
@@ -20,6 +21,7 @@ export default function DateField({
   placeholder = 'Pick a day',
   clearable = false,
 }) {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const [anchor, setAnchor] = useState(() => startOfMonth(value || new Date()))
 
@@ -40,7 +42,7 @@ export default function DateField({
         <span className="select-sheet-chevron" aria-hidden="true">▾</span>
       </button>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Pick a day">
+      <Modal open={open} onClose={() => setOpen(false)} title={t('picker.pickDay')}>
         <div className="stack-3">
           {clearable && (
             <button
@@ -51,23 +53,23 @@ export default function DateField({
                 setOpen(false)
               }}
             >
-              <span className="sheet-item-label">No due date</span>
+              <span className="sheet-item-label">{t('add.noDueDate')}</span>
             </button>
           )}
           <div className="period-nav">
-            <button className="nav-arrow" onClick={() => move(-1)} aria-label="Previous month">
+            <button className="nav-arrow" onClick={() => move(-1)} aria-label={t('cal.prev')}>
               ‹
             </button>
             <span className="period-label" style={{ cursor: 'default' }}>
               {formatMonthYear(anchor)}
             </span>
-            <button className="nav-arrow" onClick={() => move(1)} aria-label="Next month">
+            <button className="nav-arrow" onClick={() => move(1)} aria-label={t('cal.next')}>
               ›
             </button>
           </div>
 
           <div className="month-grid" role="grid">
-            {DAY_NAMES_SHORT.map((d) => (
+            {shortWeekdays().map((d) => (
               <div key={d} className="month-dow" aria-hidden="true">
                 {d}
               </div>

@@ -1,5 +1,6 @@
 import { useState } from 'react'
 import { useGroups } from '../context/GroupContext'
+import { useI18n } from '../context/LanguageContext'
 import Modal from './Modal'
 import { CheckIcon } from './icons'
 
@@ -10,6 +11,7 @@ import { CheckIcon } from './icons'
  */
 export default function GroupSwitcher() {
   const { groups, activeGroup, activeGroupId, setActiveGroupId } = useGroups()
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
 
   if (groups.length === 0) return null
@@ -26,13 +28,13 @@ export default function GroupSwitcher() {
         className="group-pill"
         onClick={() => setOpen(true)}
         aria-haspopup="dialog"
-        aria-label={`Care team: ${activeGroup?.name}. Tap to switch.`}
+        aria-label={t('switcher.aria', { name: activeGroup?.name })}
       >
         <span className="group-pill-name">{activeGroup?.name}</span>
         <span className="group-pill-chevron" aria-hidden="true">▾</span>
       </button>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Switch care team">
+      <Modal open={open} onClose={() => setOpen(false)} title={t('switcher.title')}>
         <ul className="switcher-list">
           {groups.map((g) => {
             const isActive = g.id === activeGroupId

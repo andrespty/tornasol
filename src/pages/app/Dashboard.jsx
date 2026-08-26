@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useGroups } from '../../context/GroupContext'
+import { useI18n } from '../../context/LanguageContext'
 import { fetchEvents, fetchAttendeesForGroup, fetchTasks, setTaskComplete } from '../../lib/api'
 import { useRealtimeRefresh } from '../../hooks/useRealtimeRefresh'
 import { InlineLoading } from '../../components/Loading'
@@ -17,7 +18,13 @@ import { CalendarIcon, TasksIcon } from '../../components/icons'
 export default function Dashboard() {
   const { user, profile } = useAuth()
   const { activeGroup, activeGroupId } = useGroups()
+  const { t } = useI18n()
   const navigate = useNavigate()
+  const relLabels = {
+    today: t('cal.today'),
+    tomorrow: t('relative.tomorrow'),
+    yesterday: t('relative.yesterday'),
+  }
 
   const [events, setEvents] = useState([])
   const [attendees, setAttendees] = useState([])
@@ -93,29 +100,26 @@ export default function Dashboard() {
   return (
     <div className="page stack-3">
       <div>
-        <h1>Hello, {firstName}</h1>
-        {activeGroup && <p className="muted">Here's what you have on for {activeGroup.name}.</p>}
+        <h1>{t('home.hello', { name: firstName })}</h1>
+        {activeGroup && <p className="muted">{t('home.caringFor', { group: activeGroup.name })}</p>}
       </div>
 
       {loading ? (
-        <InlineLoading />
+        <InlineLoading label={t('common.loading')} />
       ) : (
         <>
           <section className="stack">
             <div className="home-head">
-              <h2 style={{ margin: 0 }}>Your events</h2>
+              <h2 style={{ margin: 0 }}>{t('home.yourEvents')}</h2>
               <button className="link-btn" onClick={() => navigate('/app/calendar')}>
-                See calendar
+                {t('home.seeCalendar')}
               </button>
             </div>
 
             {myEvents.length === 0 ? (
               <div className="card home-empty">
                 <CalendarIcon />
-                <p style={{ margin: 0 }}>
-                  You're not signed up for any upcoming events. Open the calendar
-                  to find one.
-                </p>
+                <p style={{ margin: 0 }}>{t('home.noEvents')}</p>
               </div>
             ) : (
               <div className="stack">
@@ -127,7 +131,7 @@ export default function Dashboard() {
                     onClick={() => navigate('/app/calendar')}
                   >
                     <div className="event-card-top">
-                      <span className="event-card-time">{relativeDay(ev.start_time)}</span>
+                      <span className="event-card-time">{relativeDay(ev.start_time, relLabels)}</span>
                       {ev.type && (
                         <span className="type-badge" style={{ backgroundColor: ev.type.color }}>
                           {ev.type.name}
@@ -144,31 +148,31 @@ export default function Dashboard() {
 
           <section className="stack">
             <div className="home-head">
-              <h2 style={{ margin: 0 }}>Your tasks</h2>
+              <h2 style={{ margin: 0 }}>{t('home.yourTasks')}</h2>
               <button className="link-btn" onClick={() => navigate('/app/tasks')}>
-                See all tasks
+                {t('home.seeAllTasks')}
               </button>
             </div>
 
             {myTasks.length === 0 ? (
               <div className="card home-empty">
                 <TasksIcon />
-                <p style={{ margin: 0 }}>Nothing assigned to you right now.</p>
+                <p style={{ margin: 0 }}>{t('home.noTasks')}</p>
               </div>
             ) : (
               <ul className="task-list">
-                {myTasks.map((t) => (
-                  <li key={t.id} className="task-item">
+                {myTasks.map((task) => (
+                  <li key={task.id} className="task-item">
                     <button
                       className="task-check"
-                      onClick={() => completeTask(t)}
-                      aria-label="Mark as done"
+                      onClick={() => completeTask(task)}
+                      aria-label={t('tasks.markDone')}
                     />
                     <div className="task-body">
-                      <span className="task-title">{t.title}</span>
-                      {t.due_date && (
+                      <span className="task-title">{task.title}</span>
+                      {task.due_date && (
                         <span className="task-meta">
-                          <span className="task-date">{formatDateShort(parseDateOnly(t.due_date))}</span>
+                          <span className="task-date">{formatDateShort(parseDateOnly(task.due_date))}</span>
                         </span>
                       )}
                     </div>

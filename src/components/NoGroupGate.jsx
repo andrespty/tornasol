@@ -1,3 +1,4 @@
+import { useI18n } from '../context/LanguageContext'
 import CreateGroupCard from './CreateGroupCard'
 import { SunIcon } from './icons'
 
@@ -7,17 +8,15 @@ import { SunIcon } from './icons'
  * creating (or being invited to) one.
  */
 export default function NoGroupGate() {
+  const { t } = useI18n()
   return (
     <div className="page stack-3">
       <div className="center stack">
         <div style={{ display: 'flex', justifyContent: 'center' }}>
           <SunIcon width={56} height={56} />
         </div>
-        <h1 style={{ marginBottom: 0 }}>Let's set up your care team</h1>
-        <p className="muted" style={{ marginBottom: 0 }}>
-          Everything in Tornasol happens inside a care team. Create one to get
-          started — or open an invite link someone shared with you.
-        </p>
+        <h1 style={{ marginBottom: 0 }}>{t('gate.title')}</h1>
+        <p className="muted" style={{ marginBottom: 0 }}>{t('gate.body')}</p>
       </div>
       <CreateGroupCard />
     </div>

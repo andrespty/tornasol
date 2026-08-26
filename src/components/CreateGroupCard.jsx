@@ -1,10 +1,12 @@
 import { useState } from 'react'
 import { createGroup } from '../lib/api'
 import { useGroups } from '../context/GroupContext'
+import { useI18n } from '../context/LanguageContext'
 import { friendlyError } from '../lib/errors'
 
 export default function CreateGroupCard({ onCreated }) {
   const { refreshGroups, setActiveGroupId } = useGroups()
+  const { t } = useI18n()
   const [name, setName] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
@@ -32,28 +34,26 @@ export default function CreateGroupCard({ onCreated }) {
 
   return (
     <form onSubmit={handleSubmit} className="card stack">
-      <h2 style={{ marginBottom: 0 }}>Start a care team</h2>
-      <p className="muted">
-        Give your group a name — like the person you're caring for.
-      </p>
+      <h2 style={{ marginBottom: 0 }}>{t('createGroup.title')}</h2>
+      <p className="muted">{t('createGroup.intro')}</p>
       {error && (
         <div className="alert alert-error" role="alert">
           {error}
         </div>
       )}
       <label className="field" style={{ marginBottom: 0 }}>
-        <span className="field-label">Group name</span>
+        <span className="field-label">{t('createGroup.nameLabel')}</span>
         <input
           className="input"
           type="text"
           value={name}
           onChange={(e) => setName(e.target.value)}
-          placeholder="e.g. Marysol's care team"
+          placeholder={t('createGroup.namePlaceholder')}
           required
         />
       </label>
       <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={busy}>
-        {busy ? 'Creating…' : 'Create group'}
+        {busy ? t('createGroup.creating') : t('createGroup.submit')}
       </button>
     </form>
   )

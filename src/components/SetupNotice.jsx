@@ -1,3 +1,4 @@
+import { useI18n } from '../context/LanguageContext'
 import { SunIcon } from './icons'
 
 /**
@@ -5,6 +6,7 @@ import { SunIcon } from './icons'
  * Keeps the app from crashing during initial setup.
  */
 export default function SetupNotice() {
+  const { t } = useI18n()
   return (
     <div className="auth-page">
       <div className="container auth-inner">
@@ -13,19 +15,13 @@ export default function SetupNotice() {
           <span>Tornasol</span>
         </div>
         <div className="card stack">
-          <h1 style={{ marginBottom: 0 }}>Almost ready</h1>
-          <p>
-            Tornasol needs to be connected to its database before you can sign
-            in.
-          </p>
+          <h1 style={{ marginBottom: 0 }}>{t('setup.title')}</h1>
+          <p>{t('setup.body')}</p>
           <div className="alert alert-info">
             Add your Supabase project URL and anon key to a <code>.env</code>{' '}
             file (see <code>.env.example</code>), then restart the app.
           </div>
-          <p className="muted">
-            This message only appears during setup — your family will never see
-            it.
-          </p>
+          <p className="muted">{t('setup.hint')}</p>
         </div>
       </div>
     </div>

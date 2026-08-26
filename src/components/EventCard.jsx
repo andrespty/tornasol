@@ -1,8 +1,10 @@
 import Avatar from './Avatar'
+import { useI18n } from '../context/LanguageContext'
 import { formatEventWhen } from '../lib/date'
 
 /** A tappable event summary card (used in the calendar and the day modal). */
 export default function EventCard({ ev, attendeeIds = [], memberById, user, onOpen }) {
+  const { t } = useI18n()
   const isFull = attendeeIds.length >= ev.capacity
   const mine = attendeeIds.includes(user?.id)
   return (
@@ -22,7 +24,7 @@ export default function EventCard({ ev, attendeeIds = [], memberById, user, onOp
       {ev.title && <div className="event-card-title">{ev.title}</div>}
       <div className="event-card-bottom">
         <span className={`pill ${isFull ? 'pill-taken' : 'pill-open'}`}>
-          {isFull ? 'Full' : `${attendeeIds.length} / ${ev.capacity}`}
+          {isFull ? t('event.full') : `${attendeeIds.length} / ${ev.capacity}`}
         </span>
         {attendeeIds.length > 0 && (
           <span className="attendee-avatars">
@@ -32,7 +34,7 @@ export default function EventCard({ ev, attendeeIds = [], memberById, user, onOp
             })}
           </span>
         )}
-        {mine && <span className="pill pill-admin">You're in</span>}
+        {mine && <span className="pill pill-admin">{t('event.youreIn')}</span>}
       </div>
     </button>
   )

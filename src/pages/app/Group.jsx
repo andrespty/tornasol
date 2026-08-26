@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useGroups } from '../../context/GroupContext'
+import { useI18n } from '../../context/LanguageContext'
 import {
   fetchGroupMembers,
   createInvite,
@@ -22,6 +23,7 @@ import { CopyIcon, WhatsAppIcon } from '../../components/icons'
 export default function Group() {
   const { user } = useAuth()
   const { activeGroup, activeGroupId, isAdmin, refreshGroups } = useGroups()
+  const { t } = useI18n()
   const navigate = useNavigate()
   const [savingSetting, setSavingSetting] = useState(false)
   const [showDelete, setShowDelete] = useState(false)
@@ -145,7 +147,8 @@ export default function Group() {
       <div>
         <h1>{activeGroup?.name}</h1>
         <p className="muted">
-          {members.length} {members.length === 1 ? 'person' : 'people'} on this care team
+          {members.length} {members.length === 1 ? t('group.person') : t('group.people')}{' '}
+          {t('group.onTeam')}
         </p>
       </div>
 
@@ -157,9 +160,9 @@ export default function Group() {
 
       {/* Members */}
       <section className="card stack">
-        <h2 style={{ marginBottom: 0 }}>People</h2>
+        <h2 style={{ marginBottom: 0 }}>{t('group.peopleHeading')}</h2>
         {loading ? (
-          <InlineLoading />
+          <InlineLoading label={t('common.loading')} />
         ) : (
           <ul className="member-list">
             {members.map((m) => {
@@ -171,9 +174,9 @@ export default function Group() {
                   <div className="member-info">
                     <span className="member-name">
                       {m.name}
-                      {isSelf && ' (you)'}
+                      {isSelf && ` (${t('common.you').toLowerCase()})`}
                     </span>
-                    {memberIsAdmin && <span className="pill pill-admin">Admin</span>}
+                    {memberIsAdmin && <span className="pill pill-admin">{t('group.admin')}</span>}
                   </div>
                 </li>
               )
@@ -185,10 +188,8 @@ export default function Group() {
       {/* Invite */}
       {isAdmin ? (
         <section className="card stack">
-          <h2 style={{ marginBottom: 0 }}>Invite someone</h2>
-          <p className="muted" style={{ margin: 0 }}>
-            Create a link and share it, or send it by email.
-          </p>
+          <h2 style={{ marginBottom: 0 }}>{t('group.inviteTitle')}</h2>
+          <p className="muted" style={{ margin: 0 }}>{t('group.inviteIntro')}</p>
 
           {!inviteUrl ? (
             <button
@@ -196,7 +197,7 @@ export default function Group() {
               onClick={handleCreateInvite}
               disabled={inviteBusy}
             >
-              {inviteBusy ? 'Creating link…' : 'Create invite link'}
+              {inviteBusy ? t('group.creatingLink') : t('group.createLink')}
             </button>
           ) : (
             <div className="stack">
@@ -206,15 +207,15 @@ export default function Group() {
                   readOnly
                   value={inviteUrl}
                   onFocus={(e) => e.target.select()}
-                  aria-label="Invite link"
+                  aria-label={t('group.createLink')}
                 />
                 <button className="btn btn-secondary btn-sm invite-copy" onClick={copyInvite}>
-                  <CopyIcon /> {copied ? 'Copied!' : 'Copy'}
+                  <CopyIcon /> {copied ? t('group.copied') : t('group.copy')}
                 </button>
               </div>
 
               <a className="btn btn-outline btn-block" href={emailHref}>
-                Send by email
+                {t('group.sendEmail')}
               </a>
 
               {typeof navigator !== 'undefined' && navigator.share && (
@@ -223,26 +224,25 @@ export default function Group() {
                   onClick={() =>
                     navigator
                       .share({
-                        title: 'Tornasol invite',
+                        title: 'Tornasol',
                         text: `Join ${activeGroup?.name || 'our care team'} on Tornasol`,
                         url: inviteUrl,
                       })
                       .catch(() => {})
                   }
                 >
-                  Share…
+                  {t('group.share')}
                 </button>
               )}
 
-              <p className="field-hint">This link works for 14 days.</p>
+              <p className="field-hint">{t('group.linkExpires')}</p>
             </div>
           )}
         </section>
       ) : (
         <section className="card">
           <p className="muted" style={{ marginBottom: 0 }}>
-            Only the team admin can invite new people. Ask them to send you a
-            link.
+            {t('group.onlyAdminInvite')}
           </p>
         </section>
       )}
@@ -251,21 +251,19 @@ export default function Group() {
       {isAdmin && (
         <>
           <section className="card stack">
-            <h2 style={{ marginBottom: 0 }}>Group settings</h2>
+            <h2 style={{ marginBottom: 0 }}>{t('group.settings')}</h2>
             <div className="setting-row">
               <div>
-                <div style={{ fontWeight: 700 }}>Members can create events</div>
+                <div style={{ fontWeight: 700 }}>{t('group.membersCanCreate')}</div>
                 <div className="muted" style={{ fontSize: '0.95rem' }}>
-                  {allowMemberEvents
-                    ? 'Anyone can add events to the calendar.'
-                    : 'Only you can add events. Others can sign up.'}
+                  {allowMemberEvents ? t('group.membersCanCreateOn') : t('group.membersCanCreateOff')}
                 </div>
               </div>
               <button
                 className={`toggle${allowMemberEvents ? ' is-on' : ''}`}
                 role="switch"
                 aria-checked={allowMemberEvents}
-                aria-label="Members can create events"
+                aria-label={t('group.membersCanCreate')}
                 onClick={toggleMemberEvents}
                 disabled={savingSetting}
               >
@@ -275,23 +273,18 @@ export default function Group() {
           </section>
 
           <section className="card stack">
-            <h2 style={{ marginBottom: 0 }}>Share with the family</h2>
-            <p className="muted" style={{ margin: 0 }}>
-              Post this week's schedule to your WhatsApp group.
-            </p>
+            <h2 style={{ marginBottom: 0 }}>{t('group.shareFamily')}</h2>
+            <p className="muted" style={{ margin: 0 }}>{t('group.shareFamilyIntro')}</p>
             <button className="btn btn-whatsapp btn-sm share-week-inline" onClick={shareThisWeek} disabled={sharing}>
-              <WhatsAppIcon /> {sharing ? 'Preparing…' : "Share this week"}
+              <WhatsAppIcon /> {sharing ? t('group.preparing') : t('group.shareThisWeek')}
             </button>
           </section>
 
           <EventTypesManager groupId={activeGroupId} />
 
           <section className="card stack">
-            <h2 style={{ marginBottom: 0 }}>Danger zone</h2>
-            <p className="muted" style={{ margin: 0 }}>
-              Deleting this care team removes its events, tasks, notes, and
-              members for everyone. This cannot be undone.
-            </p>
+            <h2 style={{ marginBottom: 0 }}>{t('group.dangerZone')}</h2>
+            <p className="muted" style={{ margin: 0 }}>{t('group.deleteIntro')}</p>
             <button
               className="btn btn-danger btn-block"
               onClick={() => {
@@ -299,21 +292,17 @@ export default function Group() {
                 setShowDelete(true)
               }}
             >
-              Delete this care team
+              {t('group.deleteTeam')}
             </button>
           </section>
         </>
       )}
 
-      <Modal open={showDelete} onClose={() => setShowDelete(false)} title="Delete care team">
+      <Modal open={showDelete} onClose={() => setShowDelete(false)} title={t('group.deleteModalTitle')}>
         <div className="stack">
-          <p style={{ margin: 0 }}>
-            This permanently deletes <strong>{activeGroup?.name}</strong> and all
-            of its events, tasks, and notes. To confirm, type the team's name
-            below.
-          </p>
+          <p style={{ margin: 0 }}>{t('group.deleteConfirmBody', { name: activeGroup?.name })}</p>
           <label className="field" style={{ marginBottom: 0 }}>
-            <span className="field-label">Team name</span>
+            <span className="field-label">{t('group.teamName')}</span>
             <input
               className="input"
               value={confirmName}
@@ -327,10 +316,10 @@ export default function Group() {
             onClick={handleDeleteGroup}
             disabled={!canConfirmDelete || deleting}
           >
-            {deleting ? 'Deleting…' : 'Delete forever'}
+            {deleting ? t('group.deleting') : t('group.deleteForever')}
           </button>
           <button className="btn btn-ghost btn-block" onClick={() => setShowDelete(false)}>
-            Cancel
+            {t('common.cancel')}
           </button>
         </div>
       </Modal>

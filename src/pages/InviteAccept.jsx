@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
 import { useAuth } from '../context/AuthContext'
+import { useI18n } from '../context/LanguageContext'
 import { friendlyError } from '../lib/errors'
 import Loading from '../components/Loading'
 import { SunIcon } from '../components/icons'
@@ -13,6 +14,7 @@ export default function InviteAccept() {
   const { token } = useParams()
   const navigate = useNavigate()
   const { isAuthenticated, loading } = useAuth()
+  const { t } = useI18n()
 
   const [groupName, setGroupName] = useState(null)
   const [status, setStatus] = useState('checking') // checking | invalid | ready | joining | joined | error
@@ -71,7 +73,7 @@ export default function InviteAccept() {
   }, [isAuthenticated, loading, status])
 
   if (loading || status === 'checking') {
-    return <Loading label="Opening your invite…" />
+    return <Loading label={t('invite.opening')} />
   }
 
   return (
@@ -85,34 +87,28 @@ export default function InviteAccept() {
         <div className="card stack center">
           {status === 'invalid' && (
             <>
-              <h1>This invite is not valid</h1>
-              <p className="muted">
-                The link may have expired or already been used. Please ask the
-                person who invited you to send a new one.
-              </p>
+              <h1>{t('invite.invalidTitle')}</h1>
+              <p className="muted">{t('invite.invalidBody')}</p>
               <button
                 className="btn btn-ghost btn-block"
                 onClick={() => navigate('/')}
               >
-                Go to start
+                {t('common.goStart')}
               </button>
             </>
           )}
 
           {status === 'ready' && !isAuthenticated && (
             <>
-              <h1>You're invited!</h1>
-              <p>
-                Join <strong>{groupName}</strong> to help coordinate care
-                together.
-              </p>
+              <h1>{t('invite.youreInvited')}</h1>
+              <p>{t('invite.joinPrompt', { group: groupName })}</p>
               <button className="btn btn-primary btn-block btn-lg" onClick={goSignUp}>
-                Create your account
+                {t('invite.createAccount')}
               </button>
               <p className="muted">
-                Already have an account?{' '}
+                {t('invite.haveAccount')}{' '}
                 <button className="link-btn" onClick={goSignUp}>
-                  Log in to join
+                  {t('invite.logInToJoin')}
                 </button>
               </p>
             </>
@@ -121,27 +117,25 @@ export default function InviteAccept() {
           {status === 'joining' && (
             <>
               <div className="spinner" style={{ margin: '0 auto' }} />
-              <p className="muted">Joining {groupName}…</p>
+              <p className="muted">{t('invite.joining', { group: groupName })}</p>
             </>
           )}
 
           {status === 'joined' && (
             <>
-              <h1>You're in!</h1>
-              <p>
-                Welcome to <strong>{groupName}</strong>. Taking you to the app…
-              </p>
+              <h1>{t('invite.joinedTitle')}</h1>
+              <p>{t('invite.joinedBody', { group: groupName })}</p>
             </>
           )}
 
           {status === 'error' && (
             <>
-              <h1>We couldn't add you</h1>
+              <h1>{t('invite.errorTitle')}</h1>
               <div className="alert alert-error" role="alert">
                 {error}
               </div>
               <button className="btn btn-primary btn-block" onClick={join}>
-                Try again
+                {t('invite.tryAgain')}
               </button>
             </>
           )}
