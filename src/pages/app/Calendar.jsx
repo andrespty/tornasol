@@ -1,18 +1,25 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useGroups } from '../../context/GroupContext'
-import { fetchEvents, fetchGroupMembers, fetchAttendeesForGroup, fetchEventTypes } from '../../lib/api'
+import {
+  fetchEvents,
+  fetchGroupMembers,
+  fetchAttendeesForGroup,
+  fetchEventTypes,
+  fetchTasks,
+  setTaskComplete,
+} from '../../lib/api'
 import { useRealtimeRefresh } from '../../hooks/useRealtimeRefresh'
 import {
   startOfWeek,
   startOfMonth,
-  endOfMonth,
   startOfDay,
   addDays,
   isToday,
   formatDayLong,
   formatDateShort,
   formatMonthYear,
+  parseDateOnly,
   DAY_NAMES_SHORT,
 } from '../../lib/date'
 import { InlineLoading } from '../../components/Loading'
@@ -31,6 +38,7 @@ export default function Calendar() {
   const [members, setMembers] = useState([])
   const [attendees, setAttendees] = useState([])
   const [eventTypes, setEventTypes] = useState([])
+  const [tasks, setTasks] = useState([])
   const [loading, setLoading] = useState(true)
 
   const [dayModalDay, setDayModalDay] = useState(null)
@@ -39,16 +47,18 @@ export default function Calendar() {
 
   const load = useCallback(async () => {
     if (!activeGroupId) return
-    const [evRes, memRes, attRes, typeRes] = await Promise.all([
+    const [evRes, memRes, attRes, typeRes, taskRes] = await Promise.all([
       fetchEvents(activeGroupId),
       fetchGroupMembers(activeGroupId),
       fetchAttendeesForGroup(activeGroupId),
       fetchEventTypes(activeGroupId),
+      fetchTasks(activeGroupId),
     ])
     setEvents(evRes.data || [])
     setMembers(memRes.data || [])
     setAttendees(attRes.data || [])
     setEventTypes(typeRes.data || [])
+    setTasks(taskRes.data || [])
     setLoading(false)
   }, [activeGroupId])
 
@@ -67,6 +77,19 @@ export default function Calendar() {
     { channelKey: `attendees-${activeGroupId}`, enabled: !!activeGroupId },
     load
   )
+  useRealtimeRefresh(
+    'tasks',
+    { filter: `group_id=eq.${activeGroupId}`, channelKey: `cal-tasks-${activeGroupId}`, enabled: !!activeGroupId },
+    load
+  )
+
+  async function toggleTask(task) {
+    setTasks((prev) =>
+      prev.map((t) => (t.id === task.id ? { ...t, is_complete: !t.is_complete } : t))
+    )
+    const { error: err } = await setTaskComplete(task.id, !task.is_complete)
+    if (err) load()
+  }
 
   const memberById = useMemo(() => {
     const map = new Map()
@@ -92,6 +115,15 @@ export default function Calendar() {
     })
     return map
   }, [events])
+
+  const taskDaysWithOpen = useMemo(() => {
+    const set = new Set()
+    tasks.forEach((t) => {
+      if (!t.due_date || t.is_complete) return
+      set.add(startOfDay(parseDateOnly(t.due_date)).getTime())
+    })
+    return set
+  }, [tasks])
 
   const detailLive = useMemo(
     () => (detail ? events.find((e) => e.id === detail.id) || null : null),
@@ -179,9 +211,19 @@ export default function Calendar() {
       {loading ? (
         <InlineLoading label="Loading events…" />
       ) : view === 'month' ? (
-        <MonthView anchor={anchor} eventsByDay={eventsByDay} onOpenDay={openDay} />
+        <MonthView
+          anchor={anchor}
+          eventsByDay={eventsByDay}
+          taskDays={taskDaysWithOpen}
+          onOpenDay={openDay}
+        />
       ) : (
-        <WeekView anchor={anchor} eventsByDay={eventsByDay} onOpenDay={openDay} />
+        <WeekView
+          anchor={anchor}
+          eventsByDay={eventsByDay}
+          taskDays={taskDaysWithOpen}
+          onOpenDay={openDay}
+        />
       )}
 
       <DayModal
@@ -189,10 +231,12 @@ export default function Calendar() {
         day={dayModalDay}
         onClose={() => setDayModalDay(null)}
         events={events}
+        tasks={tasks}
         attendeeIdsByEvent={attendeeIdsByEvent}
         memberById={memberById}
         user={user}
         onOpenEvent={openEventFromDay}
+        onToggleTask={toggleTask}
         onAdd={addOnDay}
       />
 
@@ -225,18 +269,20 @@ export default function Calendar() {
   )
 }
 
-function DayDots({ list }) {
+function DayDots({ list, hasTasks }) {
   const colors = [...new Set(list.map((e) => e.type?.color).filter(Boolean))].slice(0, 4)
+  if (colors.length === 0 && !hasTasks) return <span className="month-dots" />
   return (
     <span className="month-dots">
       {colors.map((c) => (
         <span key={c} className="dot" style={{ backgroundColor: c }} />
       ))}
+      {hasTasks && <span className="dot dot-task" title="Has tasks" />}
     </span>
   )
 }
 
-function MonthView({ anchor, eventsByDay, onOpenDay }) {
+function MonthView({ anchor, eventsByDay, taskDays, onOpenDay }) {
   const monthStart = startOfMonth(anchor)
   const gridStart = startOfWeek(monthStart)
   const cells = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i))
@@ -250,7 +296,8 @@ function MonthView({ anchor, eventsByDay, onOpenDay }) {
       ))}
       {cells.map((day) => {
         const inMonth = day.getMonth() === monthStart.getMonth()
-        const list = eventsByDay.get(startOfDay(day).getTime()) || []
+        const key = startOfDay(day).getTime()
+        const list = eventsByDay.get(key) || []
         return (
           <button
             key={day.getTime()}
@@ -259,7 +306,7 @@ function MonthView({ anchor, eventsByDay, onOpenDay }) {
             aria-label={formatDayLong(day)}
           >
             <span className="month-cell-num">{day.getDate()}</span>
-            <DayDots list={list} />
+            <DayDots list={list} hasTasks={taskDays.has(key)} />
           </button>
         )
       })}
@@ -267,13 +314,18 @@ function MonthView({ anchor, eventsByDay, onOpenDay }) {
   )
 }
 
-function WeekView({ anchor, eventsByDay, onOpenDay }) {
+function WeekView({ anchor, eventsByDay, taskDays, onOpenDay }) {
   const weekStart = startOfWeek(anchor)
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
   return (
     <div className="week-list">
       {days.map((day) => {
-        const list = eventsByDay.get(startOfDay(day).getTime()) || []
+        const key = startOfDay(day).getTime()
+        const list = eventsByDay.get(key) || []
+        const hasTasks = taskDays.has(key)
+        const bits = []
+        if (list.length) bits.push(`${list.length} ${list.length === 1 ? 'event' : 'events'}`)
+        if (hasTasks) bits.push('tasks')
         return (
           <button
             key={day.getTime()}
@@ -287,15 +339,13 @@ function WeekView({ anchor, eventsByDay, onOpenDay }) {
               <span className="week-row-num">{day.getDate()}</span>
             </span>
             <span className="week-row-body">
-              {list.length === 0 ? (
-                <span className="muted">No events</span>
+              {bits.length === 0 ? (
+                <span className="muted">Nothing planned</span>
               ) : (
-                <span className="week-row-count">
-                  {list.length} {list.length === 1 ? 'event' : 'events'}
-                </span>
+                <span className="week-row-count">{bits.join(' · ')}</span>
               )}
             </span>
-            <DayDots list={list} />
+            <DayDots list={list} hasTasks={hasTasks} />
           </button>
         )
       })}
