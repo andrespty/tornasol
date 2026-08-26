@@ -7,14 +7,17 @@ import {
   createInvite,
   updateGroupSetting,
   deleteGroup,
+  fetchEvents,
+  fetchAttendeesForGroup,
 } from '../../lib/api'
+import { shareWeekOnWhatsApp } from '../../lib/share'
 import { useRealtimeRefresh } from '../../hooks/useRealtimeRefresh'
 import { InlineLoading } from '../../components/Loading'
 import Avatar from '../../components/Avatar'
 import Modal from '../../components/Modal'
 import EventTypesManager from '../../components/EventTypesManager'
 import { friendlyError } from '../../lib/errors'
-import { CopyIcon } from '../../components/icons'
+import { CopyIcon, WhatsAppIcon } from '../../components/icons'
 
 export default function Group() {
   const { user } = useAuth()
@@ -105,6 +108,29 @@ export default function Group() {
   }
 
   const canConfirmDelete = confirmName.trim() === (activeGroup?.name || '').trim()
+
+  const [sharing, setSharing] = useState(false)
+  async function shareThisWeek() {
+    setSharing(true)
+    try {
+      const [evRes, attRes] = await Promise.all([
+        fetchEvents(activeGroupId),
+        fetchAttendeesForGroup(activeGroupId),
+      ])
+      const counts = new Map()
+      ;(attRes.data || []).forEach((a) =>
+        counts.set(a.event_id, (counts.get(a.event_id) || 0) + 1)
+      )
+      shareWeekOnWhatsApp({
+        events: evRes.data || [],
+        attendeeCountByEvent: counts,
+        groupName: activeGroup?.name || 'our care team',
+        origin: window.location.origin,
+      })
+    } finally {
+      setSharing(false)
+    }
+  }
 
   const emailHref = inviteUrl
     ? `mailto:?subject=${encodeURIComponent(
@@ -246,6 +272,16 @@ export default function Group() {
                 <span className="toggle-knob" />
               </button>
             </div>
+          </section>
+
+          <section className="card stack">
+            <h2 style={{ marginBottom: 0 }}>Share with the family</h2>
+            <p className="muted" style={{ margin: 0 }}>
+              Post this week's schedule to your WhatsApp group.
+            </p>
+            <button className="btn btn-whatsapp btn-sm share-week-inline" onClick={shareThisWeek} disabled={sharing}>
+              <WhatsAppIcon /> {sharing ? 'Preparing…' : "Share this week"}
+            </button>
           </section>
 
           <EventTypesManager groupId={activeGroupId} />

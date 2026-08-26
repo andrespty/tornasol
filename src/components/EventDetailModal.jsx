@@ -141,28 +141,32 @@ export default function EventDetailModal({
   return (
     <Modal open={open} onClose={onClose} title="Event">
       <div className="stack-3">
-        <div>
-          {event.type && (
-            <span
-              className="type-badge"
-              style={{ backgroundColor: event.type.color }}
-            >
-              {event.type.name}
-            </span>
-          )}
-          {event.title && <div className="event-detail-title">{event.title}</div>}
-          <div className="shift-detail-day">{formatDayLong(event.start_time)}</div>
-          <div className="shift-detail-time">{formatEventWhen(event)}</div>
-          {event.series_id && (
-            <p className="muted" style={{ marginTop: 'var(--space-1)', marginBottom: 0 }}>
-              Part of a weekly series — this is just this week.
-            </p>
-          )}
+        <div className="event-detail-header">
+          <div>
+            {event.type && (
+              <span className="type-badge" style={{ backgroundColor: event.type.color }}>
+                {event.type.name}
+              </span>
+            )}
+            {event.title && <div className="event-detail-title">{event.title}</div>}
+            <div className="shift-detail-day">{formatDayLong(event.start_time)}</div>
+            <div className="shift-detail-time">{formatEventWhen(event)}</div>
+            {event.series_id && (
+              <p className="muted" style={{ marginTop: 'var(--space-1)', marginBottom: 0 }}>
+                Part of a weekly series — this is just this week.
+              </p>
+            )}
+          </div>
+          <button
+            type="button"
+            className="share-icon-btn"
+            onClick={shareToWhatsApp}
+            aria-label="Share to WhatsApp"
+            title="Share to WhatsApp"
+          >
+            <WhatsAppIcon />
+          </button>
         </div>
-
-        <button type="button" className="btn btn-whatsapp btn-block" onClick={shareToWhatsApp}>
-          <WhatsAppIcon /> Share to WhatsApp
-        </button>
 
         {error && (
           <div className="alert alert-error" role="alert">

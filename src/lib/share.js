@@ -6,6 +6,16 @@
  * hit send. https://wa.me/?text= opens WhatsApp directly (app on mobile,
  * WhatsApp Web on desktop) with the text ready.
  */
+import {
+  startOfWeek,
+  startOfDay,
+  addDays,
+  formatDateShort,
+  formatEventWhen,
+  toDateOnly,
+  DAY_NAMES_SHORT,
+} from './date'
+
 export function openWhatsApp(text) {
   const url = `https://wa.me/?text=${encodeURIComponent(text)}`
   window.open(url, '_blank', 'noopener')
@@ -25,6 +35,37 @@ export function buildEventShareText({ typeName, title, dayLine, whenLine, signed
     `${dayLine}, ${whenLine}\n` +
     `${status}\n\n` +
     `Sign up 👉 ${url}`
+  )
+}
+
+// Build + open a WhatsApp digest of a week's events. Defaults to this week.
+export function shareWeekOnWhatsApp({ events, attendeeCountByEvent, groupName, origin, weekStart }) {
+  const ws = weekStart || startOfWeek(new Date())
+  const sections = []
+  for (let i = 0; i < 7; i += 1) {
+    const day = addDays(ws, i)
+    const dayKey = startOfDay(day).getTime()
+    const list = (events || [])
+      .filter((ev) => startOfDay(ev.start_time).getTime() === dayKey)
+      .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
+    if (list.length === 0) continue
+    sections.push({
+      dayLabel: `${DAY_NAMES_SHORT[day.getDay()]}, ${formatDateShort(day)}`,
+      entries: list.map((ev) => {
+        const signed = attendeeCountByEvent?.get(ev.id) || 0
+        const name = ev.title ? `${ev.type?.name || 'Event'}: ${ev.title}` : ev.type?.name || 'Event'
+        return `${formatEventWhen(ev)} — ${name} (${signed}/${ev.capacity})`
+      }),
+    })
+  }
+  const url = `${origin}/app/calendar?week=${toDateOnly(ws)}`
+  openWhatsApp(
+    buildWeekShareText({
+      groupName,
+      rangeLabel: `${formatDateShort(ws)} – ${formatDateShort(addDays(ws, 6))}`,
+      sections,
+      url,
+    })
   )
 }
 
