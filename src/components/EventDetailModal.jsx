@@ -16,6 +16,7 @@ import {
 import { formatDayLong, formatEventWhen, formatDateShort, formatTime } from '../lib/date'
 import { openWhatsApp, buildEventShareText } from '../lib/share'
 import { WhatsAppIcon } from './icons'
+import { useI18n } from '../context/LanguageContext'
 import { friendlyError } from '../lib/errors'
 
 export default function EventDetailModal({
@@ -35,6 +36,7 @@ export default function EventDetailModal({
   const [transferTo, setTransferTo] = useState('')
   const [busy, setBusy] = useState(false)
   const [error, setError] = useState('')
+  const { t } = useI18n()
 
   const eventId = event?.id
 
@@ -103,9 +105,7 @@ export default function EventDetailModal({
   }
 
   async function handleDelete(series) {
-    const msg = series
-      ? 'Delete this event and all future repeats? This cannot be undone.'
-      : 'Delete this event? This cannot be undone.'
+    const msg = series ? t('event.confirmDeleteSeries') : t('event.confirmDelete')
     if (!window.confirm(msg)) return
     await run(() =>
       series ? deleteEventSeriesFrom(event.series_id, event.start_time) : deleteEvent(eventId)
@@ -136,10 +136,10 @@ export default function EventDetailModal({
     if (!err) setNotes((prev) => prev.filter((n) => n.id !== noteId))
   }
 
-  const spotsText = `${ids.length} / ${event.capacity} signed up`
+  const spotsText = t('event.signedUp', { n: ids.length, cap: event.capacity })
 
   return (
-    <Modal open={open} onClose={onClose} title="Event">
+    <Modal open={open} onClose={onClose} title={t('event.title')}>
       <div className="stack-3">
         <div className="event-detail-header">
           <div>
@@ -153,7 +153,7 @@ export default function EventDetailModal({
             <div className="shift-detail-time">{formatEventWhen(event)}</div>
             {event.series_id && (
               <p className="muted" style={{ marginTop: 'var(--space-1)', marginBottom: 0 }}>
-                Part of a weekly series — this is just this week.
+                {t('event.seriesNote')}
               </p>
             )}
           </div>
@@ -161,8 +161,8 @@ export default function EventDetailModal({
             type="button"
             className="share-icon-btn"
             onClick={shareToWhatsApp}
-            aria-label="Share to WhatsApp"
-            title="Share to WhatsApp"
+            aria-label={t('event.share')}
+            title={t('event.share')}
           >
             <WhatsAppIcon />
           </button>
@@ -177,12 +177,12 @@ export default function EventDetailModal({
         {/* Attendees */}
         <div className="stack">
           <div className="attendee-head">
-            <h3 style={{ margin: 0 }}>Who's coming</h3>
+            <h3 style={{ margin: 0 }}>{t('event.whosComing')}</h3>
             <span className={`pill ${isFull ? 'pill-taken' : 'pill-open'}`}>{spotsText}</span>
           </div>
 
           {ids.length === 0 ? (
-            <p className="muted" style={{ margin: 0 }}>No one has signed up yet.</p>
+            <p className="muted" style={{ margin: 0 }}>{t('event.noOneYet')}</p>
           ) : (
             <ul className="attendee-list">
               {ids.map((id) => {
@@ -190,7 +190,7 @@ export default function EventDetailModal({
                 return (
                   <li key={id} className="attendee-item">
                     <Avatar name={m?.name} initials={m?.initials} size="sm" />
-                    <span>{id === user?.id ? 'You' : m?.name || 'Member'}</span>
+                    <span>{id === user?.id ? t('common.you') : m?.name || t('common.member')}</span>
                   </li>
                 )
               })}
@@ -204,7 +204,7 @@ export default function EventDetailModal({
                 onClick={() => run(() => giveUpSpot(eventId, user.id))}
                 disabled={busy}
               >
-                Give up my spot
+                {t('event.giveUp')}
               </button>
 
               {transferCandidates.length > 0 && (
@@ -213,12 +213,12 @@ export default function EventDetailModal({
                     className="select"
                     value={transferTo}
                     onChange={(e) => setTransferTo(e.target.value)}
-                    aria-label="Transfer my spot to"
+                    aria-label={t('event.transferTo')}
                   >
-                    <option value="">Transfer my spot to…</option>
+                    <option value="">{t('event.transferTo')}</option>
                     {transferCandidates.map((m) => (
                       <option key={m.userId} value={m.userId}>
-                        {m.userId === user?.id ? 'Me' : m.name}
+                        {m.userId === user?.id ? t('common.me') : m.name}
                       </option>
                     ))}
                   </select>
@@ -227,14 +227,14 @@ export default function EventDetailModal({
                     onClick={handleTransfer}
                     disabled={busy || !transferTo}
                   >
-                    Transfer
+                    {t('event.transfer')}
                   </button>
                 </div>
               )}
             </div>
           ) : isFull ? (
             <div className="alert alert-info" style={{ margin: 0 }}>
-              This event is full.
+              {t('event.isFull')}
             </div>
           ) : (
             <button
@@ -242,22 +242,22 @@ export default function EventDetailModal({
               onClick={() => run(() => signUpForEvent(eventId, user.id))}
               disabled={busy}
             >
-              Sign up
+              {t('event.signUp')}
             </button>
           )}
         </div>
 
         {/* Handoff notes */}
         <div className="stack">
-          <h3 style={{ marginBottom: 0 }}>Handoff notes</h3>
+          <h3 style={{ marginBottom: 0 }}>{t('event.notesTitle')}</h3>
           <p className="muted" style={{ margin: 0, fontSize: '0.95rem' }}>
-            Meds, meals, mood — anything the next person should know.
+            {t('event.notesHint')}
           </p>
 
           {notesLoading ? (
-            <InlineLoading label="Loading notes…" />
+            <InlineLoading label={t('common.loadingNotes')} />
           ) : notes.length === 0 ? (
-            <p className="muted" style={{ marginBottom: 0 }}>No notes yet.</p>
+            <p className="muted" style={{ marginBottom: 0 }}>{t('event.noNotes')}</p>
           ) : (
             <ul className="note-list">
               {notes.map((n) => {
@@ -265,7 +265,7 @@ export default function EventDetailModal({
                   n.author?.display_name ||
                   n.author?.email ||
                   memberById.get(n.author_id)?.name ||
-                  'Member'
+                  t('common.member')
                 return (
                   <li key={n.id} className="card card-notes note-item">
                     <p style={{ marginBottom: 'var(--space-1)', whiteSpace: 'pre-wrap' }}>
@@ -278,7 +278,7 @@ export default function EventDetailModal({
                       {n.author_id === user?.id && (
                         <button
                           className="icon-btn"
-                          aria-label="Delete note"
+                          aria-label={t('event.deleteNote')}
                           onClick={() => handleDeleteNote(n.id)}
                         >
                           <TrashIcon />
@@ -293,16 +293,16 @@ export default function EventDetailModal({
 
           <form onSubmit={handleAddNote} className="stack">
             <label className="field" style={{ marginBottom: 0 }}>
-              <span className="visually-hidden">Add a note</span>
+              <span className="visually-hidden">{t('event.addNote')}</span>
               <textarea
                 className="textarea"
                 value={noteText}
                 onChange={(e) => setNoteText(e.target.value)}
-                placeholder="Write a note for the next caregiver…"
+                placeholder={t('event.notePlaceholder')}
               />
             </label>
             <button className="btn btn-secondary btn-block" disabled={busy || !noteText.trim()}>
-              Add note
+              {t('event.addNote')}
             </button>
           </form>
         </div>
@@ -311,7 +311,7 @@ export default function EventDetailModal({
         {canDelete && (
           <div className="stack">
             <button className="btn btn-danger btn-block" onClick={() => handleDelete(false)} disabled={busy}>
-              Delete this event
+              {t('event.deleteThis')}
             </button>
             {event.series_id && (
               <button
@@ -319,7 +319,7 @@ export default function EventDetailModal({
                 onClick={() => handleDelete(true)}
                 disabled={busy}
               >
-                Delete this &amp; future repeats
+                {t('event.deleteFuture')}
               </button>
             )}
           </div>

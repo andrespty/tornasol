@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState } from 'react'
 import Modal from './Modal'
+import { useI18n } from '../context/LanguageContext'
 
 const HOURS12 = Array.from({ length: 12 }, (_, i) => i + 1) // 1..12
 const MINUTES = Array.from({ length: 12 }, (_, i) => i * 5) // 0,5,...,55
@@ -53,6 +54,7 @@ function Wheel({ items, value, onChange, format }) {
 
 /** Non-native time picker: a button that opens scrollable hour/minute/AM-PM wheels. */
 export default function TimeField({ hour, minute, onChange }) {
+  const { t } = useI18n()
   const [open, setOpen] = useState(false)
   const [draftH, setDraftH] = useState(to12(hour).h)
   const [draftMin, setDraftMin] = useState(minute)
@@ -78,7 +80,7 @@ export default function TimeField({ hour, minute, onChange }) {
         <span className="select-sheet-chevron" aria-hidden="true">▾</span>
       </button>
 
-      <Modal open={open} onClose={() => setOpen(false)} title="Pick a time">
+      <Modal open={open} onClose={() => setOpen(false)} title={t('picker.pickTime')}>
         <div className="stack-3">
           <div className="wheels">
             <Wheel items={HOURS12} value={draftH} onChange={setDraftH} />
@@ -92,7 +94,7 @@ export default function TimeField({ hour, minute, onChange }) {
             <Wheel items={MERIDIEMS} value={draftMer} onChange={setDraftMer} />
           </div>
           <button type="button" className="btn btn-primary btn-block btn-lg" onClick={done}>
-            Done · {formatHM(to24(draftH, draftMer), draftMin)}
+            {t('picker.done')} · {formatHM(to24(draftH, draftMer), draftMin)}
           </button>
         </div>
       </Modal>

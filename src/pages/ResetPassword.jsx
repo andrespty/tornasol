@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { supabase } from '../lib/supabaseClient'
+import { useI18n } from '../context/LanguageContext'
 import { friendlyError } from '../lib/errors'
 import { SunIcon } from '../components/icons'
 
@@ -11,6 +12,7 @@ import { SunIcon } from '../components/icons'
  */
 export default function ResetPassword() {
   const navigate = useNavigate()
+  const { t } = useI18n()
   const [ready, setReady] = useState(false)
   const [password, setPassword] = useState('')
   const [confirm, setConfirm] = useState('')
@@ -34,11 +36,11 @@ export default function ResetPassword() {
     e.preventDefault()
     setError('')
     if (password.length < 6) {
-      setError('Please choose a password with at least 6 characters.')
+      setError(t('reset.tooShort'))
       return
     }
     if (password !== confirm) {
-      setError('Those passwords do not match. Please type them again.')
+      setError(t('reset.noMatch'))
       return
     }
     setBusy(true)
@@ -63,18 +65,12 @@ export default function ResetPassword() {
         </div>
 
         <div className="card stack">
-          <h1 style={{ marginBottom: 0 }}>Set a new password</h1>
+          <h1 style={{ marginBottom: 0 }}>{t('reset.title')}</h1>
 
           {done ? (
-            <div className="alert alert-success" role="status">
-              Your password is updated. Taking you into Tornasol…
-            </div>
+            <div className="alert alert-success" role="status">{t('reset.done')}</div>
           ) : !ready ? (
-            <p className="muted">
-              Open this page from the link we emailed you on this phone. If you
-              are seeing this, the link may have expired — please request a new
-              one.
-            </p>
+            <p className="muted">{t('reset.expired')}</p>
           ) : (
             <>
               {error && (
@@ -84,19 +80,19 @@ export default function ResetPassword() {
               )}
               <form onSubmit={handleSubmit} className="stack">
                 <label className="field">
-                  <span className="field-label">New password</span>
+                  <span className="field-label">{t('reset.newPassword')}</span>
                   <input
                     className="input"
                     type="password"
                     autoComplete="new-password"
                     value={password}
                     onChange={(e) => setPassword(e.target.value)}
-                    placeholder="At least 6 characters"
+                    placeholder={t('auth.passwordNewPlaceholder')}
                     required
                   />
                 </label>
                 <label className="field">
-                  <span className="field-label">Type it again</span>
+                  <span className="field-label">{t('reset.typeAgain')}</span>
                   <input
                     className="input"
                     type="password"
@@ -111,7 +107,7 @@ export default function ResetPassword() {
                   className="btn btn-primary btn-block btn-lg"
                   disabled={busy}
                 >
-                  {busy ? 'Please wait…' : 'Save new password'}
+                  {busy ? t('common.pleaseWait') : t('reset.save')}
                 </button>
               </form>
             </>

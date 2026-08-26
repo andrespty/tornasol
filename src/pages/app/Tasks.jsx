@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { useAuth } from '../../context/AuthContext'
 import { useGroups } from '../../context/GroupContext'
+import { useI18n } from '../../context/LanguageContext'
 import {
   fetchTasks,
   setTaskComplete,
@@ -12,12 +13,13 @@ import { useRealtimeRefresh } from '../../hooks/useRealtimeRefresh'
 import { InlineLoading } from '../../components/Loading'
 import Avatar from '../../components/Avatar'
 import AddModal from '../../components/AddModal'
-import { formatDateShort } from '../../lib/date'
+import { formatDateShort, parseDateOnly } from '../../lib/date'
 import { CheckIcon, TrashIcon, PlusIcon } from '../../components/icons'
 
 export default function Tasks() {
   const { user } = useAuth()
   const { activeGroupId } = useGroups()
+  const { t } = useI18n()
 
   const [tasks, setTasks] = useState([])
   const [members, setMembers] = useState([])
@@ -64,7 +66,7 @@ export default function Tasks() {
   }
 
   async function remove(task) {
-    if (!window.confirm('Delete this task?')) return
+    if (!window.confirm(t('tasks.confirmDelete'))) return
     setTasks((prev) => prev.filter((t) => t.id !== task.id))
     const { error: err } = await deleteTask(task.id)
     if (err) load()
@@ -73,26 +75,26 @@ export default function Tasks() {
   return (
     <div className="page stack-3">
       <div className="calendar-head">
-        <h1 style={{ margin: 0 }}>Tasks</h1>
+        <h1 style={{ margin: 0 }}>{t('tasks.title')}</h1>
         <button className="btn btn-primary btn-sm" onClick={() => setAddOpen(true)}>
-          <PlusIcon width={20} height={20} /> Add
+          <PlusIcon width={20} height={20} /> {t('common.add')}
         </button>
       </div>
 
       {loading ? (
-        <InlineLoading label="Loading tasks…" />
+        <InlineLoading label={t('tasks.loading')} />
       ) : (
         <>
           <section className="stack">
-            <h2>To do</h2>
+            <h2>{t('tasks.todo')}</h2>
             {open.length === 0 ? (
               <div className="card">
-                <p style={{ marginBottom: 0 }}>All caught up. Nothing to do right now.</p>
+                <p style={{ marginBottom: 0 }}>{t('tasks.allCaughtUp')}</p>
               </div>
             ) : (
               <ul className="task-list">
-                {open.map((t) => (
-                  <TaskItem key={t.id} task={t} user={user} onToggle={toggle} onDelete={remove} />
+                {open.map((task) => (
+                  <TaskItem key={task.id} task={task} user={user} onToggle={toggle} onDelete={remove} t={t} />
                 ))}
               </ul>
             )}
@@ -100,10 +102,10 @@ export default function Tasks() {
 
           {done.length > 0 && (
             <section className="stack">
-              <h2>Done</h2>
+              <h2>{t('tasks.done')}</h2>
               <ul className="task-list">
-                {done.map((t) => (
-                  <TaskItem key={t.id} task={t} user={user} onToggle={toggle} onDelete={remove} />
+                {done.map((task) => (
+                  <TaskItem key={task.id} task={task} user={user} onToggle={toggle} onDelete={remove} t={t} />
                 ))}
               </ul>
             </section>
@@ -126,7 +128,7 @@ export default function Tasks() {
   )
 }
 
-function TaskItem({ task, user, onToggle, onDelete }) {
+function TaskItem({ task, user, onToggle, onDelete, t }) {
   const assigneeName = task.assignee?.display_name || task.assignee?.email
   const isMine = task.assigned_user_id === user?.id
   return (
@@ -135,7 +137,7 @@ function TaskItem({ task, user, onToggle, onDelete }) {
         className="task-check"
         onClick={() => onToggle(task)}
         aria-pressed={task.is_complete}
-        aria-label={task.is_complete ? 'Mark as not done' : 'Mark as done'}
+        aria-label={task.is_complete ? t('tasks.markNotDone') : t('tasks.markDone')}
       >
         {task.is_complete && <CheckIcon width={22} height={22} />}
       </button>
@@ -143,19 +145,21 @@ function TaskItem({ task, user, onToggle, onDelete }) {
       <div className="task-body">
         <span className="task-title">{task.title}</span>
         <span className="task-meta">
-          {task.due_date && <span className="task-date">{formatDateShort(task.due_date)}</span>}
+          {task.due_date && (
+            <span className="task-date">{formatDateShort(parseDateOnly(task.due_date))}</span>
+          )}
           {task.is_shared ? (
-            <span className="pill pill-admin task-tag">Shared</span>
+            <span className="pill pill-admin task-tag">{t('tasks.shared')}</span>
           ) : (
             <span className="task-assignee">
               <Avatar name={assigneeName} initials={task.assignee?.avatar_initials} size="sm" />
-              {isMine ? 'You' : assigneeName || 'Someone'}
+              {isMine ? t('common.you') : assigneeName || t('common.someone')}
             </span>
           )}
         </span>
       </div>
 
-      <button className="icon-btn" onClick={() => onDelete(task)} aria-label="Delete task">
+      <button className="icon-btn" onClick={() => onDelete(task)} aria-label={t('tasks.deleteTask')}>
         <TrashIcon />
       </button>
     </li>

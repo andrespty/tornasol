@@ -4,6 +4,20 @@
  * user's local timezone.
  */
 
+// Active locale for date formatting; set by the LanguageProvider.
+let LOCALE = undefined
+export function setDateLocale(loc) {
+  LOCALE = loc
+}
+
+// Short weekday names (Sunday first) in the active locale.
+export function shortWeekdays() {
+  const sunday = new Date(2023, 0, 1) // a Sunday
+  return Array.from({ length: 7 }, (_, i) =>
+    addDays(sunday, i).toLocaleDateString(LOCALE, { weekday: 'short' })
+  )
+}
+
 export const DAY_NAMES = [
   'Sunday',
   'Monday',
@@ -55,7 +69,7 @@ export function isToday(date) {
 }
 
 export function formatDayLong(date) {
-  return new Date(date).toLocaleDateString(undefined, {
+  return new Date(date).toLocaleDateString(LOCALE, {
     weekday: 'long',
     month: 'long',
     day: 'numeric',
@@ -63,14 +77,14 @@ export function formatDayLong(date) {
 }
 
 export function formatDateShort(date) {
-  return new Date(date).toLocaleDateString(undefined, {
+  return new Date(date).toLocaleDateString(LOCALE, {
     month: 'short',
     day: 'numeric',
   })
 }
 
 export function formatTime(date) {
-  return new Date(date).toLocaleTimeString(undefined, {
+  return new Date(date).toLocaleTimeString(LOCALE, {
     hour: 'numeric',
     minute: '2-digit',
   })
@@ -87,18 +101,19 @@ export function formatEventWhen(ev) {
 }
 
 // "Today" / "Tomorrow" / "Yesterday", otherwise "Tue, Aug 27".
-export function relativeDay(date) {
+export function relativeDay(date, labels) {
   const d = startOfDay(date)
   const today = startOfDay(new Date())
   const diff = Math.round((d.getTime() - today.getTime()) / 86400000)
-  if (diff === 0) return 'Today'
-  if (diff === 1) return 'Tomorrow'
-  if (diff === -1) return 'Yesterday'
-  return `${DAY_NAMES_SHORT[d.getDay()]}, ${formatDateShort(d)}`
+  const l = labels || { today: 'Today', tomorrow: 'Tomorrow', yesterday: 'Yesterday' }
+  if (diff === 0) return l.today
+  if (diff === 1) return l.tomorrow
+  if (diff === -1) return l.yesterday
+  return `${d.toLocaleDateString(LOCALE, { weekday: 'short' })}, ${formatDateShort(d)}`
 }
 
 export function formatMonthYear(date) {
-  return new Date(date).toLocaleDateString(undefined, {
+  return new Date(date).toLocaleDateString(LOCALE, {
     month: 'long',
     year: 'numeric',
   })

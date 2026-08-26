@@ -6,6 +6,7 @@ import TimeField from './TimeField'
 import Stepper from './Stepper'
 import { createEvents, createTask } from '../lib/api'
 import { addDays, startOfDay, toDateOnly } from '../lib/date'
+import { useI18n } from '../context/LanguageContext'
 import { friendlyError } from '../lib/errors'
 
 const MAX_WEEKS = 20
@@ -58,6 +59,7 @@ export default function AddModal({
   defaultMode = 'event',
   onCreated,
 }) {
+  const { t } = useI18n()
   const [mode, setMode] = useState(defaultMode)
   const [date, setDate] = useState(() => startOfDay(defaultDate || new Date()))
   // Task due date is optional and defaults per entry point (day vs Tasks tab).
@@ -101,13 +103,13 @@ export default function AddModal({
 
   async function submitEvent() {
     if (!typeId) {
-      setError('Please choose an event type.')
+      setError(t('add.chooseType.err'))
       return
     }
     const baseStart = allDay ? atTime(date, 0, 0) : atTime(date, startH, startM)
     const baseEnd = allDay ? atTime(date, 23, 59) : atTime(date, endH, endM)
     if (!allDay && baseEnd <= baseStart) {
-      setError('The end time needs to be after the start time.')
+      setError(t('add.endAfterStart'))
       return
     }
     const cap = Math.max(1, Math.min(maxAttendees, capacity))
@@ -136,15 +138,15 @@ export default function AddModal({
   }
 
   async function submitTask() {
-    const t = taskTitle.trim()
-    if (!t) {
-      setError('Please write what needs to be done.')
+    const title_ = taskTitle.trim()
+    if (!title_) {
+      setError(t('add.whatToDo.err'))
       return
     }
     const { error: err } = await createTask({
       group_id: groupId,
       created_by: userId,
-      title: t,
+      title: title_,
       assigned_user_id: assignee || null,
       is_shared: !assignee,
       due_date: taskDue ? toDateOnly(taskDue) : null,
@@ -170,20 +172,20 @@ export default function AddModal({
     }
   }
 
-  const typeOptions = (eventTypes || []).map((t) => ({ value: t.id, label: t.name }))
+  const typeOptions = (eventTypes || []).map((ty) => ({ value: ty.id, label: ty.name }))
   const memberOptions = [
-    { value: '', label: 'Anyone (shared)' },
+    { value: '', label: t('picker.anyoneShared') },
     ...(members || []).map((m) => ({
       value: m.userId,
-      label: m.userId === userId ? 'Me' : m.name,
+      label: m.userId === userId ? t('common.me') : m.name,
       initials: m.initials,
     })),
   ]
 
   return (
-    <Modal open={open} onClose={onClose} title="Add to this day">
+    <Modal open={open} onClose={onClose} title={t('add.title')}>
       <form onSubmit={handleSubmit} className="stack">
-        <div className="segmented" role="tablist" aria-label="Add event or task">
+        <div className="segmented" role="tablist">
           <button
             type="button"
             role="tab"
@@ -194,7 +196,7 @@ export default function AddModal({
               setError('')
             }}
           >
-            Event
+            {t('add.event')}
           </button>
           <button
             type="button"
@@ -206,7 +208,7 @@ export default function AddModal({
               setError('')
             }}
           >
-            Task
+            {t('add.task')}
           </button>
         </div>
 
@@ -219,38 +221,38 @@ export default function AddModal({
         {mode === 'event' ? (
           <>
             <div className="field" style={{ marginBottom: 0 }}>
-              <span className="field-label">Day</span>
+              <span className="field-label">{t('add.day')}</span>
               <DateField value={date} onChange={setDate} />
             </div>
 
             <label className="field" style={{ marginBottom: 0 }}>
-              <span className="field-label">Title (optional)</span>
+              <span className="field-label">{t('add.titleOptional')}</span>
               <input
                 className="input"
                 type="text"
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
-                placeholder="e.g. Lunch with Dad"
+                placeholder={t('add.titlePlaceholder')}
               />
             </label>
 
             <div className="field" style={{ marginBottom: 0 }}>
-              <span className="field-label">Type</span>
+              <span className="field-label">{t('add.type')}</span>
               <SelectSheet
-                title="Choose a type"
+                title={t('add.chooseType')}
                 value={typeId}
                 onChange={setTypeId}
                 options={typeOptions}
-                placeholder="Choose a type"
+                placeholder={t('add.chooseType')}
               />
             </div>
 
-            <ToggleRow label="All day" checked={allDay} onChange={setAllDay} />
+            <ToggleRow label={t('add.allDay')} checked={allDay} onChange={setAllDay} />
 
             {!allDay && (
               <div className="time-row">
                 <div className="field" style={{ marginBottom: 0, flex: 1 }}>
-                  <span className="field-label">Starts</span>
+                  <span className="field-label">{t('add.starts')}</span>
                   <TimeField
                     hour={startH}
                     minute={startM}
@@ -261,7 +263,7 @@ export default function AddModal({
                   />
                 </div>
                 <div className="field" style={{ marginBottom: 0, flex: 1 }}>
-                  <span className="field-label">Ends</span>
+                  <span className="field-label">{t('add.ends')}</span>
                   <TimeField
                     hour={endH}
                     minute={endM}
@@ -275,38 +277,38 @@ export default function AddModal({
             )}
 
             <div className="field" style={{ marginBottom: 0 }}>
-              <span className="field-label">How many people are needed?</span>
+              <span className="field-label">{t('add.howMany')}</span>
               <Stepper value={capacity} min={1} max={maxAttendees} onChange={setCapacity} />
-              <span className="field-hint">Up to {maxAttendees} (the size of your team).</span>
+              <span className="field-hint">{t('add.upTo', { n: maxAttendees })}</span>
             </div>
 
-            <ToggleRow label="Repeat every week" checked={repeats} onChange={setRepeats} />
+            <ToggleRow label={t('add.repeat')} checked={repeats} onChange={setRepeats} />
 
             {repeats && (
               <div className="field" style={{ marginBottom: 0 }}>
-                <span className="field-label">For how many weeks?</span>
-                <Stepper value={weeks} min={1} max={MAX_WEEKS} onChange={setWeeks} suffix="weeks" />
-                <span className="field-hint">Each week is signed up separately.</span>
+                <span className="field-label">{t('add.howManyWeeks')}</span>
+                <Stepper value={weeks} min={1} max={MAX_WEEKS} onChange={setWeeks} suffix={t('add.weeks')} />
+                <span className="field-hint">{t('add.eachWeekSeparate')}</span>
               </div>
             )}
           </>
         ) : (
           <>
             <label className="field" style={{ marginBottom: 0 }}>
-              <span className="field-label">What needs to be done?</span>
+              <span className="field-label">{t('add.whatToDo')}</span>
               <input
                 className="input"
                 type="text"
                 value={taskTitle}
                 onChange={(e) => setTaskTitle(e.target.value)}
-                placeholder="e.g. Refill prescription"
+                placeholder={t('add.taskPlaceholder')}
               />
             </label>
 
             <div className="field" style={{ marginBottom: 0 }}>
-              <span className="field-label">Who's it for?</span>
+              <span className="field-label">{t('add.whoFor')}</span>
               <SelectSheet
-                title="Who's it for?"
+                title={t('add.whoFor')}
                 hasAvatars
                 value={assignee}
                 onChange={setAssignee}
@@ -315,19 +317,19 @@ export default function AddModal({
             </div>
 
             <div className="field" style={{ marginBottom: 0 }}>
-              <span className="field-label">Due date (optional)</span>
+              <span className="field-label">{t('add.dueOptional')}</span>
               <DateField
                 value={taskDue}
                 onChange={setTaskDue}
                 clearable
-                placeholder="No due date"
+                placeholder={t('add.noDueDate')}
               />
             </div>
           </>
         )}
 
         <button type="submit" className="btn btn-primary btn-block btn-lg" disabled={busy}>
-          {busy ? 'Saving…' : mode === 'event' ? 'Add event' : 'Add task'}
+          {busy ? t('common.saving') : mode === 'event' ? t('add.addEvent') : t('add.addTask')}
         </button>
       </form>
     </Modal>

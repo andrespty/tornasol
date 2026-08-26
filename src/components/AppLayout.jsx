@@ -1,22 +1,24 @@
 import { NavLink, Outlet, useLocation, useNavigate } from 'react-router-dom'
 import { useAuth } from '../context/AuthContext'
 import { useGroups } from '../context/GroupContext'
+import { useI18n } from '../context/LanguageContext'
 import Avatar from './Avatar'
 import NoGroupGate from './NoGroupGate'
 import GroupSwitcher from './GroupSwitcher'
 import { SunIcon, CalendarIcon, TasksIcon, NotesIcon, PeopleIcon, HomeIcon } from './icons'
 
 const NAV = [
-  { to: '/app', label: 'Home', icon: HomeIcon, end: true },
-  { to: '/app/calendar', label: 'Events', icon: CalendarIcon },
-  { to: '/app/tasks', label: 'Tasks', icon: TasksIcon },
-  { to: '/app/notes', label: 'Notes', icon: NotesIcon },
-  { to: '/app/group', label: 'Group', icon: PeopleIcon },
+  { to: '/app', key: 'nav.home', icon: HomeIcon, end: true },
+  { to: '/app/calendar', key: 'nav.events', icon: CalendarIcon },
+  { to: '/app/tasks', key: 'nav.tasks', icon: TasksIcon },
+  { to: '/app/notes', key: 'nav.notes', icon: NotesIcon },
+  { to: '/app/group', key: 'nav.group', icon: PeopleIcon },
 ]
 
 export default function AppLayout() {
   const { profile, user } = useAuth()
   const { hasNoGroups } = useGroups()
+  const { t } = useI18n()
   const navigate = useNavigate()
   const location = useLocation()
 
@@ -32,7 +34,7 @@ export default function AppLayout() {
           type="button"
           className="app-brand"
           onClick={() => navigate('/app')}
-          aria-label="Tornasol home"
+          aria-label={t('nav.homeAria')}
         >
           <SunIcon />
           <span className="app-brand-name">Tornasol</span>
@@ -46,7 +48,7 @@ export default function AppLayout() {
           type="button"
           className="profile-btn"
           onClick={() => navigate('/app/profile')}
-          aria-label="Your profile and settings"
+          aria-label={t('nav.profileAria')}
         >
           <Avatar
             name={profile?.display_name || user?.email}
@@ -60,7 +62,7 @@ export default function AppLayout() {
       </main>
 
       <nav className="bottom-nav" aria-label="Main">
-        {NAV.map(({ to, label, icon: Icon, end }) => (
+        {NAV.map(({ to, key, icon: Icon, end }) => (
           <NavLink
             key={to}
             to={to}
@@ -68,7 +70,7 @@ export default function AppLayout() {
             className={({ isActive }) => `bottom-nav-item${isActive ? ' is-active' : ''}`}
           >
             <Icon />
-            <span>{label}</span>
+            <span>{t(key)}</span>
           </NavLink>
         ))}
       </nav>

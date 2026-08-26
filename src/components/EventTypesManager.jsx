@@ -6,6 +6,7 @@ import {
   deleteEventType,
 } from '../lib/api'
 import { EVENT_COLORS } from '../lib/eventColors'
+import { useI18n } from '../context/LanguageContext'
 import { friendlyError } from '../lib/errors'
 import { InlineLoading } from './Loading'
 import ColorPickerModal from './ColorPickerModal'
@@ -24,6 +25,7 @@ function ColorDot({ color, onClick, label }) {
 }
 
 export default function EventTypesManager({ groupId }) {
+  const { t } = useI18n()
   const [types, setTypes] = useState([])
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState('')
@@ -77,12 +79,7 @@ export default function EventTypesManager({ groupId }) {
   }
 
   async function remove(type) {
-    if (
-      !window.confirm(
-        `Delete the "${type.name}" type? Events using it will keep their color but lose the label.`
-      )
-    )
-      return
+    if (!window.confirm(t('types.confirmDelete', { name: type.name }))) return
     const { error: err } = await deleteEventType(type.id)
     if (err) setError(friendlyError(err))
     else load()
@@ -92,7 +89,7 @@ export default function EventTypesManager({ groupId }) {
   const editingColor =
     colorEditing === 'new'
       ? newColor
-      : types.find((t) => t.id === colorEditing)?.color
+      : types.find((ty) => ty.id === colorEditing)?.color
 
   function applyColor(color) {
     if (colorEditing === 'new') setNewColor(color)
@@ -101,10 +98,8 @@ export default function EventTypesManager({ groupId }) {
 
   return (
     <section className="card stack">
-      <h2 style={{ marginBottom: 0 }}>Event types</h2>
-      <p className="muted" style={{ margin: 0 }}>
-        Categories for your events. Tap the color to change it.
-      </p>
+      <h2 style={{ marginBottom: 0 }}>{t('types.title')}</h2>
+      <p className="muted" style={{ margin: 0 }}>{t('types.intro')}</p>
 
       {error && (
         <div className="alert alert-error" role="alert">
@@ -113,26 +108,26 @@ export default function EventTypesManager({ groupId }) {
       )}
 
       {loading ? (
-        <InlineLoading />
+        <InlineLoading label={t('common.loading')} />
       ) : (
         <ul className="type-list">
-          {types.map((t) => (
-            <li key={t.id} className="type-item">
+          {types.map((ty) => (
+            <li key={ty.id} className="type-item">
               <ColorDot
-                color={t.color}
-                label={`Change color for ${t.name}`}
-                onClick={() => setColorEditing(t.id)}
+                color={ty.color}
+                label={ty.name}
+                onClick={() => setColorEditing(ty.id)}
               />
               <input
                 className="input type-name-input"
-                defaultValue={t.name}
-                aria-label="Type name"
+                defaultValue={ty.name}
+                aria-label={t('types.name')}
                 onBlur={(e) => {
                   const v = e.target.value.trim()
-                  if (v && v !== t.name) rename(t, v)
+                  if (v && v !== ty.name) rename(ty, v)
                 }}
               />
-              <button className="icon-btn" aria-label={`Delete ${t.name}`} onClick={() => remove(t)}>
+              <button className="icon-btn" aria-label={t('common.add')} onClick={() => remove(ty)}>
                 <TrashIcon />
               </button>
             </li>
@@ -142,12 +137,12 @@ export default function EventTypesManager({ groupId }) {
 
       <form onSubmit={handleAdd} className="type-add">
         <span className="field-label" style={{ display: 'block', marginBottom: 'var(--space-1)' }}>
-          Add a type
+          {t('types.addLabel')}
         </span>
         <div className="type-item type-add-row">
           <ColorDot
             color={newColor}
-            label="Choose color for new type"
+            label={t('picker.pickColor')}
             onClick={() => setColorEditing('new')}
           />
           <input
@@ -155,12 +150,12 @@ export default function EventTypesManager({ groupId }) {
             type="text"
             value={newName}
             onChange={(e) => setNewName(e.target.value)}
-            placeholder="e.g. Meal time"
+            placeholder={t('types.addPlaceholder')}
           />
           <button
             className="btn btn-secondary btn-sm"
             disabled={busy || !newName.trim()}
-            aria-label="Add type"
+            aria-label={t('types.addLabel')}
           >
             <PlusIcon width={20} height={20} />
           </button>

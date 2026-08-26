@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useGroups } from '../../context/GroupContext'
+import { useI18n } from '../../context/LanguageContext'
 import {
   fetchEvents,
   fetchGroupMembers,
@@ -21,7 +22,7 @@ import {
   formatDateShort,
   formatMonthYear,
   parseDateOnly,
-  DAY_NAMES_SHORT,
+  shortWeekdays,
 } from '../../lib/date'
 import { PlusIcon } from '../../components/icons'
 import { InlineLoading } from '../../components/Loading'
@@ -32,6 +33,7 @@ import EventDetailModal from '../../components/EventDetailModal'
 export default function Calendar() {
   const { user } = useAuth()
   const { activeGroupId, isAdmin, canCreateEvent } = useGroups()
+  const { t } = useI18n()
   const [searchParams, setSearchParams] = useSearchParams()
   const deepLinkHandled = useRef(false)
 
@@ -194,25 +196,25 @@ export default function Calendar() {
   return (
     <div className="page">
       <div className="calendar-head">
-        <h1 style={{ margin: 0 }}>Events</h1>
+        <h1 style={{ margin: 0 }}>{t('cal.title')}</h1>
         {canCreateEvent && (
           <button
             className="btn btn-primary btn-sm"
             onClick={() => setAddState({ date: startOfDay(new Date()), taskDue: null })}
           >
-            <PlusIcon width={20} height={20} /> Add
+            <PlusIcon width={20} height={20} /> {t('common.add')}
           </button>
         )}
       </div>
 
-      <div className="segmented view-toggle" role="tablist" aria-label="Calendar view">
+      <div className="segmented view-toggle" role="tablist">
         <button
           role="tab"
           aria-selected={view === 'month'}
           className={`segmented-btn${view === 'month' ? ' is-active' : ''}`}
           onClick={() => setView('month')}
         >
-          Month
+          {t('cal.month')}
         </button>
         <button
           role="tab"
@@ -220,24 +222,24 @@ export default function Calendar() {
           className={`segmented-btn${view === 'week' ? ' is-active' : ''}`}
           onClick={() => setView('week')}
         >
-          Week
+          {t('cal.week')}
         </button>
       </div>
 
       <div className="period-nav">
-        <button className="nav-arrow" onClick={() => shiftPeriod(-1)} aria-label="Previous">
+        <button className="nav-arrow" onClick={() => shiftPeriod(-1)} aria-label={t('cal.prev')}>
           ‹
         </button>
-        <button className="period-label" onClick={() => setAnchor(startOfDay(new Date()))} title="Go to today">
+        <button className="period-label" onClick={() => setAnchor(startOfDay(new Date()))} title={t('cal.goToday')}>
           {periodLabel}
         </button>
-        <button className="nav-arrow" onClick={() => shiftPeriod(1)} aria-label="Next">
+        <button className="nav-arrow" onClick={() => shiftPeriod(1)} aria-label={t('cal.next')}>
           ›
         </button>
       </div>
 
       {loading ? (
-        <InlineLoading label="Loading events…" />
+        <InlineLoading label={t('cal.loading')} />
       ) : view === 'month' ? (
         <MonthView
           anchor={anchor}
@@ -317,8 +319,8 @@ function MonthView({ anchor, eventsByDay, taskDays, onOpenDay }) {
 
   return (
     <div className="month-grid" role="grid">
-      {DAY_NAMES_SHORT.map((d) => (
-        <div key={d} className="month-dow" aria-hidden="true">
+      {shortWeekdays().map((d, i) => (
+        <div key={i} className="month-dow" aria-hidden="true">
           {d}
         </div>
       ))}
@@ -343,6 +345,7 @@ function MonthView({ anchor, eventsByDay, taskDays, onOpenDay }) {
 }
 
 function WeekView({ anchor, eventsByDay, taskDays, onOpenDay }) {
+  const { t, lang } = useI18n()
   const weekStart = startOfWeek(anchor)
   const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
   return (
@@ -352,8 +355,8 @@ function WeekView({ anchor, eventsByDay, taskDays, onOpenDay }) {
         const list = eventsByDay.get(key) || []
         const hasTasks = taskDays.has(key)
         const bits = []
-        if (list.length) bits.push(`${list.length} ${list.length === 1 ? 'event' : 'events'}`)
-        if (hasTasks) bits.push('tasks')
+        if (list.length) bits.push(t(list.length === 1 ? 'cal.eventOne' : 'cal.eventOther', { n: list.length }))
+        if (hasTasks) bits.push(t('cal.tasksLabel'))
         return (
           <button
             key={day.getTime()}
@@ -362,13 +365,13 @@ function WeekView({ anchor, eventsByDay, taskDays, onOpenDay }) {
           >
             <span className="week-row-date">
               <span className="week-row-dow">
-                {day.toLocaleDateString(undefined, { weekday: 'short' })}
+                {day.toLocaleDateString(lang, { weekday: 'short' })}
               </span>
               <span className="week-row-num">{day.getDate()}</span>
             </span>
             <span className="week-row-body">
               {bits.length === 0 ? (
-                <span className="muted">Nothing planned</span>
+                <span className="muted">{t('cal.nothingPlanned')}</span>
               ) : (
                 <span className="week-row-count">{bits.join(' · ')}</span>
               )}
