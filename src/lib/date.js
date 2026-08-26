@@ -86,6 +86,17 @@ export function formatEventWhen(ev) {
   return formatTimeRange(ev.start_time, ev.end_time)
 }
 
+// "Today" / "Tomorrow" / "Yesterday", otherwise "Tue, Aug 27".
+export function relativeDay(date) {
+  const d = startOfDay(date)
+  const today = startOfDay(new Date())
+  const diff = Math.round((d.getTime() - today.getTime()) / 86400000)
+  if (diff === 0) return 'Today'
+  if (diff === 1) return 'Tomorrow'
+  if (diff === -1) return 'Yesterday'
+  return `${DAY_NAMES_SHORT[d.getDay()]}, ${formatDateShort(d)}`
+}
+
 export function formatMonthYear(date) {
   return new Date(date).toLocaleDateString(undefined, {
     month: 'long',
