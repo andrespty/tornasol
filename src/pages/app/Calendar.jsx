@@ -9,17 +9,15 @@ import {
   endOfMonth,
   startOfDay,
   addDays,
-  sameDay,
   isToday,
   formatDayLong,
   formatDateShort,
   formatMonthYear,
-  formatEventWhen,
   DAY_NAMES_SHORT,
 } from '../../lib/date'
 import { InlineLoading } from '../../components/Loading'
-import Avatar from '../../components/Avatar'
-import CreateEventModal from '../../components/CreateEventModal'
+import AddModal from '../../components/AddModal'
+import DayModal from '../../components/DayModal'
 import EventDetailModal from '../../components/EventDetailModal'
 import { PlusIcon } from '../../components/icons'
 
@@ -29,14 +27,15 @@ export default function Calendar() {
 
   const [view, setView] = useState('month')
   const [anchor, setAnchor] = useState(() => startOfDay(new Date()))
-  const [selectedDay, setSelectedDay] = useState(() => startOfDay(new Date()))
   const [events, setEvents] = useState([])
   const [members, setMembers] = useState([])
   const [attendees, setAttendees] = useState([])
   const [eventTypes, setEventTypes] = useState([])
   const [loading, setLoading] = useState(true)
-  const [showCreate, setShowCreate] = useState(false)
+
+  const [dayModalDay, setDayModalDay] = useState(null)
   const [detail, setDetail] = useState(null)
+  const [addState, setAddState] = useState(null) // { date }
 
   const load = useCallback(async () => {
     if (!activeGroupId) return
@@ -91,13 +90,9 @@ export default function Calendar() {
       if (!map.has(key)) map.set(key, [])
       map.get(key).push(ev)
     })
-    for (const list of map.values()) {
-      list.sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
-    }
     return map
   }, [events])
 
-  // Keep the open detail modal's data fresh after a reload.
   const detailLive = useMemo(
     () => (detail ? events.find((e) => e.id === detail.id) || null : null),
     [detail, events]
@@ -115,10 +110,19 @@ export default function Calendar() {
     }
   }
 
-  function goToday() {
-    const t = startOfDay(new Date())
-    setAnchor(t)
-    setSelectedDay(t)
+  function openDay(day) {
+    setDayModalDay(startOfDay(day))
+  }
+
+  function openEventFromDay(ev) {
+    setDayModalDay(null)
+    setDetail(ev)
+  }
+
+  function addOnDay() {
+    const d = dayModalDay
+    setDayModalDay(null)
+    setAddState({ date: d })
   }
 
   const weekStartLabel = startOfWeek(anchor)
@@ -127,14 +131,15 @@ export default function Calendar() {
       ? `${formatDateShort(weekStartLabel)} – ${formatDateShort(addDays(weekStartLabel, 6))}`
       : formatMonthYear(anchor)
 
-  const shared = { attendeeIdsByEvent, memberById, user, onOpen: setDetail }
-
   return (
     <div className="page">
       <div className="calendar-head">
         <h1 style={{ margin: 0 }}>Events</h1>
         {canCreateEvent && (
-          <button className="btn btn-primary btn-sm" onClick={() => setShowCreate(true)}>
+          <button
+            className="btn btn-primary btn-sm"
+            onClick={() => setAddState({ date: startOfDay(new Date()) })}
+          >
             <PlusIcon width={20} height={20} /> Add
           </button>
         )}
@@ -143,19 +148,19 @@ export default function Calendar() {
       <div className="segmented view-toggle" role="tablist" aria-label="Calendar view">
         <button
           role="tab"
-          aria-selected={view === 'week'}
-          className={`segmented-btn${view === 'week' ? ' is-active' : ''}`}
-          onClick={() => setView('week')}
-        >
-          Week
-        </button>
-        <button
-          role="tab"
           aria-selected={view === 'month'}
           className={`segmented-btn${view === 'month' ? ' is-active' : ''}`}
           onClick={() => setView('month')}
         >
           Month
+        </button>
+        <button
+          role="tab"
+          aria-selected={view === 'week'}
+          className={`segmented-btn${view === 'week' ? ' is-active' : ''}`}
+          onClick={() => setView('week')}
+        >
+          Week
         </button>
       </div>
 
@@ -163,7 +168,7 @@ export default function Calendar() {
         <button className="nav-arrow" onClick={() => shiftPeriod(-1)} aria-label="Previous">
           ‹
         </button>
-        <button className="period-label" onClick={goToday} title="Go to today">
+        <button className="period-label" onClick={() => setAnchor(startOfDay(new Date()))} title="Go to today">
           {periodLabel}
         </button>
         <button className="nav-arrow" onClick={() => shiftPeriod(1)} aria-label="Next">
@@ -173,26 +178,34 @@ export default function Calendar() {
 
       {loading ? (
         <InlineLoading label="Loading events…" />
-      ) : view === 'week' ? (
-        <WeekView anchor={anchor} eventsByDay={eventsByDay} {...shared} />
+      ) : view === 'month' ? (
+        <MonthView anchor={anchor} eventsByDay={eventsByDay} onOpenDay={openDay} />
       ) : (
-        <MonthView
-          anchor={anchor}
-          selectedDay={selectedDay}
-          setSelectedDay={setSelectedDay}
-          eventsByDay={eventsByDay}
-          {...shared}
-        />
+        <WeekView anchor={anchor} eventsByDay={eventsByDay} onOpenDay={openDay} />
       )}
 
-      <CreateEventModal
-        open={showCreate}
-        onClose={() => setShowCreate(false)}
+      <DayModal
+        open={!!dayModalDay}
+        day={dayModalDay}
+        onClose={() => setDayModalDay(null)}
+        events={events}
+        attendeeIdsByEvent={attendeeIdsByEvent}
+        memberById={memberById}
+        user={user}
+        onOpenEvent={openEventFromDay}
+        onAdd={addOnDay}
+      />
+
+      <AddModal
+        open={!!addState}
+        onClose={() => setAddState(null)}
         groupId={activeGroupId}
         userId={user?.id}
         eventTypes={eventTypes}
+        members={members}
         memberCount={members.length}
-        defaultDate={selectedDay}
+        defaultDate={addState?.date}
+        defaultMode="event"
         onCreated={load}
       />
 
@@ -211,124 +224,80 @@ export default function Calendar() {
   )
 }
 
-function EventCard({ ev, attendeeIdsByEvent, memberById, user, onOpen }) {
-  const ids = attendeeIdsByEvent.get(ev.id) || []
-  const isFull = ids.length >= ev.capacity
-  const mine = ids.includes(user?.id)
+function DayDots({ list }) {
+  const colors = [...new Set(list.map((e) => e.type?.color).filter(Boolean))].slice(0, 4)
   return (
-    <button
-      className="card event-card"
-      onClick={() => onOpen(ev)}
-      style={{ borderLeftColor: ev.type?.color || 'var(--color-border)' }}
-    >
-      <div className="event-card-top">
-        <span className="event-card-time">{formatEventWhen(ev)}</span>
-        {ev.type && (
-          <span className="type-badge" style={{ backgroundColor: ev.type.color }}>
-            {ev.type.name}
-          </span>
-        )}
-      </div>
-      {ev.title && <div className="event-card-title">{ev.title}</div>}
-      <div className="event-card-bottom">
-        <span className={`pill ${isFull ? 'pill-taken' : 'pill-open'}`}>
-          {isFull ? 'Full' : `${ids.length} / ${ev.capacity}`}
-        </span>
-        {ids.length > 0 && (
-          <span className="attendee-avatars">
-            {ids.slice(0, 4).map((id) => {
-              const m = memberById.get(id)
-              return <Avatar key={id} name={m?.name} initials={m?.initials} size="sm" />
-            })}
-          </span>
-        )}
-        {mine && <span className="pill pill-admin">You're in</span>}
-      </div>
-    </button>
+    <span className="month-dots">
+      {colors.map((c) => (
+        <span key={c} className="dot" style={{ backgroundColor: c }} />
+      ))}
+    </span>
   )
 }
 
-function WeekView({ anchor, eventsByDay, ...shared }) {
-  const weekStart = startOfWeek(anchor)
-  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
+function MonthView({ anchor, eventsByDay, onOpenDay }) {
+  const monthStart = startOfMonth(anchor)
+  const gridStart = startOfWeek(monthStart)
+  const cells = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i))
+
   return (
-    <div className="stack-3">
-      {days.map((day) => {
+    <div className="month-grid" role="grid">
+      {DAY_NAMES_SHORT.map((d) => (
+        <div key={d} className="month-dow" aria-hidden="true">
+          {d}
+        </div>
+      ))}
+      {cells.map((day) => {
+        const inMonth = day.getMonth() === monthStart.getMonth()
         const list = eventsByDay.get(startOfDay(day).getTime()) || []
         return (
-          <section key={day.getTime()} className={`day-block${isToday(day) ? ' is-today' : ''}`}>
-            <h2 className="day-heading">
-              {formatDayLong(day)}
-              {isToday(day) && <span className="today-tag">Today</span>}
-            </h2>
-            {list.length === 0 ? (
-              <p className="muted no-shifts">No events</p>
-            ) : (
-              <div className="stack">
-                {list.map((ev) => (
-                  <EventCard key={ev.id} ev={ev} {...shared} />
-                ))}
-              </div>
-            )}
-          </section>
+          <button
+            key={day.getTime()}
+            className={`month-cell${inMonth ? '' : ' is-out'}${isToday(day) ? ' is-today' : ''}`}
+            onClick={() => onOpenDay(day)}
+            aria-label={formatDayLong(day)}
+          >
+            <span className="month-cell-num">{day.getDate()}</span>
+            <DayDots list={list} />
+          </button>
         )
       })}
     </div>
   )
 }
 
-function MonthView({ anchor, selectedDay, setSelectedDay, eventsByDay, ...shared }) {
-  const monthStart = startOfMonth(anchor)
-  const gridStart = startOfWeek(monthStart)
-  const cells = Array.from({ length: 42 }, (_, i) => addDays(gridStart, i))
-  const selectedList = eventsByDay.get(startOfDay(selectedDay).getTime()) || []
-
+function WeekView({ anchor, eventsByDay, onOpenDay }) {
+  const weekStart = startOfWeek(anchor)
+  const days = Array.from({ length: 7 }, (_, i) => addDays(weekStart, i))
   return (
-    <div className="stack-3">
-      <div className="month-grid" role="grid">
-        {DAY_NAMES_SHORT.map((d) => (
-          <div key={d} className="month-dow" aria-hidden="true">
-            {d}
-          </div>
-        ))}
-        {cells.map((day) => {
-          const inMonth = day.getMonth() === monthStart.getMonth()
-          const list = eventsByDay.get(startOfDay(day).getTime()) || []
-          const isSel = sameDay(day, selectedDay)
-          const dotColors = [...new Set(list.map((e) => e.type?.color).filter(Boolean))].slice(0, 3)
-          return (
-            <button
-              key={day.getTime()}
-              className={`month-cell${inMonth ? '' : ' is-out'}${isSel ? ' is-selected' : ''}${
-                isToday(day) ? ' is-today' : ''
-              }`}
-              onClick={() => setSelectedDay(startOfDay(day))}
-              aria-label={formatDayLong(day)}
-              aria-pressed={isSel}
-            >
-              <span className="month-cell-num">{day.getDate()}</span>
-              <span className="month-dots">
-                {dotColors.map((c) => (
-                  <span key={c} className="dot" style={{ backgroundColor: c }} />
-                ))}
+    <div className="week-list">
+      {days.map((day) => {
+        const list = eventsByDay.get(startOfDay(day).getTime()) || []
+        return (
+          <button
+            key={day.getTime()}
+            className={`week-row${isToday(day) ? ' is-today' : ''}`}
+            onClick={() => onOpenDay(day)}
+          >
+            <span className="week-row-date">
+              <span className="week-row-dow">
+                {day.toLocaleDateString(undefined, { weekday: 'short' })}
               </span>
-            </button>
-          )
-        })}
-      </div>
-
-      <section className="day-block">
-        <h2 className="day-heading">{formatDayLong(selectedDay)}</h2>
-        {selectedList.length === 0 ? (
-          <p className="muted no-shifts">No events this day</p>
-        ) : (
-          <div className="stack">
-            {selectedList.map((ev) => (
-              <EventCard key={ev.id} ev={ev} {...shared} />
-            ))}
-          </div>
-        )}
-      </section>
+              <span className="week-row-num">{day.getDate()}</span>
+            </span>
+            <span className="week-row-body">
+              {list.length === 0 ? (
+                <span className="muted">No events</span>
+              ) : (
+                <span className="week-row-count">
+                  {list.length} {list.length === 1 ? 'event' : 'events'}
+                </span>
+              )}
+            </span>
+            <DayDots list={list} />
+          </button>
+        )
+      })}
     </div>
   )
 }

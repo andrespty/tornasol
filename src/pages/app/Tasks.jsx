@@ -3,17 +3,17 @@ import { useAuth } from '../../context/AuthContext'
 import { useGroups } from '../../context/GroupContext'
 import {
   fetchTasks,
-  createTask,
   setTaskComplete,
   deleteTask,
   fetchGroupMembers,
+  fetchEventTypes,
 } from '../../lib/api'
 import { useRealtimeRefresh } from '../../hooks/useRealtimeRefresh'
 import { InlineLoading } from '../../components/Loading'
 import Avatar from '../../components/Avatar'
-import SelectSheet from '../../components/SelectSheet'
-import { friendlyError } from '../../lib/errors'
-import { CheckIcon, TrashIcon } from '../../components/icons'
+import AddModal from '../../components/AddModal'
+import { formatDateShort } from '../../lib/date'
+import { CheckIcon, TrashIcon, PlusIcon } from '../../components/icons'
 
 export default function Tasks() {
   const { user } = useAuth()
@@ -21,20 +21,20 @@ export default function Tasks() {
 
   const [tasks, setTasks] = useState([])
   const [members, setMembers] = useState([])
+  const [eventTypes, setEventTypes] = useState([])
   const [loading, setLoading] = useState(true)
-  const [title, setTitle] = useState('')
-  const [assignee, setAssignee] = useState('') // '' = shared
-  const [busy, setBusy] = useState(false)
-  const [error, setError] = useState('')
+  const [addOpen, setAddOpen] = useState(false)
 
   const load = useCallback(async () => {
     if (!activeGroupId) return
-    const [taskRes, memberRes] = await Promise.all([
+    const [taskRes, memberRes, typeRes] = await Promise.all([
       fetchTasks(activeGroupId),
       fetchGroupMembers(activeGroupId),
+      fetchEventTypes(activeGroupId),
     ])
     setTasks(taskRes.data || [])
     setMembers(memberRes.data || [])
+    setEventTypes(typeRes.data || [])
     setLoading(false)
   }, [activeGroupId])
 
@@ -55,33 +55,7 @@ export default function Tasks() {
     return { open: o, done: d }
   }, [tasks])
 
-  async function handleAdd(e) {
-    e.preventDefault()
-    const text = title.trim()
-    if (!text) return
-    setBusy(true)
-    setError('')
-    try {
-      const { error: err } = await createTask({
-        group_id: activeGroupId,
-        created_by: user.id,
-        title: text,
-        assigned_user_id: assignee || null,
-        is_shared: !assignee,
-      })
-      if (err) throw err
-      setTitle('')
-      setAssignee('')
-      await load()
-    } catch (err) {
-      setError(friendlyError(err))
-    } finally {
-      setBusy(false)
-    }
-  }
-
   async function toggle(task) {
-    // Optimistic flip; realtime/load will reconcile.
     setTasks((prev) =>
       prev.map((t) => (t.id === task.id ? { ...t, is_complete: !t.is_complete } : t))
     )
@@ -96,52 +70,14 @@ export default function Tasks() {
     if (err) load()
   }
 
-
   return (
     <div className="page stack-3">
-      <div>
-        <h1>Tasks</h1>
-        <p className="muted">Shared to-dos for the care team — anyone can help.</p>
-      </div>
-
-      <form onSubmit={handleAdd} className="card stack">
-        {error && (
-          <div className="alert alert-error" role="alert">
-            {error}
-          </div>
-        )}
-        <label className="field" style={{ marginBottom: 0 }}>
-          <span className="field-label">Add a task</span>
-          <input
-            className="input"
-            type="text"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="e.g. Refill prescription"
-            required
-          />
-        </label>
-        <div className="field" style={{ marginBottom: 0 }}>
-          <span className="field-label">Who's it for?</span>
-          <SelectSheet
-            title="Who's it for?"
-            hasAvatars
-            value={assignee}
-            onChange={setAssignee}
-            options={[
-              { value: '', label: 'Anyone (shared)' },
-              ...members.map((m) => ({
-                value: m.userId,
-                label: m.userId === user?.id ? 'Me' : m.name,
-                initials: m.initials,
-              })),
-            ]}
-          />
-        </div>
-        <button className="btn btn-primary btn-block" disabled={busy}>
-          {busy ? 'Adding…' : 'Add task'}
+      <div className="calendar-head">
+        <h1 style={{ margin: 0 }}>Tasks</h1>
+        <button className="btn btn-primary btn-sm" onClick={() => setAddOpen(true)}>
+          <PlusIcon width={20} height={20} /> Add
         </button>
-      </form>
+      </div>
 
       {loading ? (
         <InlineLoading label="Loading tasks…" />
@@ -174,6 +110,18 @@ export default function Tasks() {
           )}
         </>
       )}
+
+      <AddModal
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        groupId={activeGroupId}
+        userId={user?.id}
+        eventTypes={eventTypes}
+        members={members}
+        memberCount={members.length}
+        defaultMode="task"
+        onCreated={load}
+      />
     </div>
   )
 }
@@ -194,14 +142,17 @@ function TaskItem({ task, user, onToggle, onDelete }) {
 
       <div className="task-body">
         <span className="task-title">{task.title}</span>
-        {task.is_shared ? (
-          <span className="pill pill-admin task-tag">Shared</span>
-        ) : (
-          <span className="task-assignee">
-            <Avatar name={assigneeName} initials={task.assignee?.avatar_initials} size="sm" />
-            {isMine ? 'You' : assigneeName || 'Someone'}
-          </span>
-        )}
+        <span className="task-meta">
+          {task.due_date && <span className="task-date">{formatDateShort(task.due_date)}</span>}
+          {task.is_shared ? (
+            <span className="pill pill-admin task-tag">Shared</span>
+          ) : (
+            <span className="task-assignee">
+              <Avatar name={assigneeName} initials={task.assignee?.avatar_initials} size="sm" />
+              {isMine ? 'You' : assigneeName || 'Someone'}
+            </span>
+          )}
+        </span>
       </div>
 
       <button className="icon-btn" onClick={() => onDelete(task)} aria-label="Delete task">

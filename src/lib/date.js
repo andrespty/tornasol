@@ -93,6 +93,13 @@ export function formatMonthYear(date) {
   })
 }
 
+// yyyy-mm-dd for a Postgres `date` column, using LOCAL calendar day.
+export function toDateOnly(date) {
+  const d = new Date(date)
+  const pad = (n) => String(n).padStart(2, '0')
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`
+}
+
 // yyyy-mm-ddThh:mm for <input type="datetime-local"> using LOCAL time.
 export function toLocalInputValue(date) {
   const d = new Date(date)

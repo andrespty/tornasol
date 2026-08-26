@@ -194,11 +194,12 @@ export async function fetchTasks(groupId) {
   return supabase
     .from('tasks')
     .select(
-      'id, title, is_shared, is_complete, assigned_user_id, created_at, ' +
+      'id, title, is_shared, is_complete, assigned_user_id, due_date, created_at, ' +
         'assignee:profiles!tasks_assigned_user_id_fkey(display_name, email, avatar_initials)'
     )
     .eq('group_id', groupId)
     .order('is_complete', { ascending: true })
+    .order('due_date', { ascending: true, nullsFirst: false })
     .order('created_at', { ascending: false })
 }
 
