@@ -21,20 +21,48 @@ export function openWhatsApp(text) {
   window.open(url, '_blank', 'noopener')
 }
 
+// Read the chosen language (same source as the rest of the app) so shared
+// messages match the sender's language without needing React context.
+function shareLang() {
+  try {
+    const l = window.localStorage.getItem('tornasol-lang')
+    if (l === 'es' || l === 'en') return l
+  } catch {
+    // ignore
+  }
+  return (navigator.language || '').toLowerCase().startsWith('es') ? 'es' : 'en'
+}
+
+const M = {
+  full: {
+    en: (n, cap) => `Full (${n}/${cap})`,
+    es: (n, cap) => `Lleno (${n}/${cap})`,
+  },
+  status: {
+    en: (n, cap, left) => `${n}/${cap} signed up · ${left} ${left === 1 ? 'spot' : 'spots'} open`,
+    es: (n, cap, left) => `${n}/${cap} apuntados · ${left} ${left === 1 ? 'lugar' : 'lugares'} libre${left === 1 ? '' : 's'}`,
+  },
+  signUp: { en: 'Sign up 👉', es: 'Apúntate 👉' },
+  thisWeek: { en: 'This week', es: 'Esta semana' },
+  noEvents: { en: 'No events scheduled this week yet.', es: 'Aún no hay eventos esta semana.' },
+  openIn: { en: 'Open in Tornasol 👉', es: 'Abre en Tornasol 👉' },
+}
+
 // A single event, framed to get people to sign up.
 export function buildEventShareText({ typeName, title, dayLine, whenLine, signedUp, capacity, url }) {
+  const lang = shareLang()
   const spotsLeft = Math.max(0, capacity - signedUp)
   const heading = title ? `${typeName} — ${title}` : typeName
   const status =
     spotsLeft === 0
-      ? `Full (${signedUp}/${capacity})`
-      : `${signedUp}/${capacity} signed up · ${spotsLeft} ${spotsLeft === 1 ? 'spot' : 'spots'} open`
+      ? M.full[lang](signedUp, capacity)
+      : M.status[lang](signedUp, capacity, spotsLeft)
 
   return (
     `🌻 *${heading}*\n` +
     `${dayLine}, ${whenLine}\n` +
     `${status}\n\n` +
-    `Sign up 👉 ${url}`
+    `${M.signUp[lang]} ${url}`
   )
 }
 
@@ -71,17 +99,18 @@ export function shareWeekOnWhatsApp({ events, attendeeCountByEvent, groupName, o
 
 // The whole week's schedule as a digest.
 export function buildWeekShareText({ groupName, rangeLabel, sections, url }) {
+  const lang = shareLang()
   const body =
     sections.length === 0
-      ? 'No events scheduled this week yet.'
+      ? M.noEvents[lang]
       : sections
           .map((s) => `*${s.dayLabel}*\n${s.entries.map((e) => `• ${e}`).join('\n')}`)
           .join('\n\n')
 
   return (
-    `🌻 *This week — ${groupName}*\n` +
+    `🌻 *${M.thisWeek[lang]} — ${groupName}*\n` +
     `${rangeLabel}\n\n` +
     `${body}\n\n` +
-    `Open in Tornasol 👉 ${url}`
+    `${M.openIn[lang]} ${url}`
   )
 }
