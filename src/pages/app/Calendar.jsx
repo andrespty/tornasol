@@ -1,4 +1,5 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useSearchParams } from 'react-router-dom'
 import { useAuth } from '../../context/AuthContext'
 import { useGroups } from '../../context/GroupContext'
 import {
@@ -19,18 +20,23 @@ import {
   formatDayLong,
   formatDateShort,
   formatMonthYear,
+  formatEventWhen,
   parseDateOnly,
+  toDateOnly,
   DAY_NAMES_SHORT,
 } from '../../lib/date'
+import { openWhatsApp, buildWeekShareText } from '../../lib/share'
+import { PlusIcon, WhatsAppIcon } from '../../components/icons'
 import { InlineLoading } from '../../components/Loading'
 import AddModal from '../../components/AddModal'
 import DayModal from '../../components/DayModal'
 import EventDetailModal from '../../components/EventDetailModal'
-import { PlusIcon } from '../../components/icons'
 
 export default function Calendar() {
   const { user } = useAuth()
-  const { activeGroupId, isAdmin, canCreateEvent } = useGroups()
+  const { activeGroup, activeGroupId, isAdmin, canCreateEvent } = useGroups()
+  const [searchParams, setSearchParams] = useSearchParams()
+  const deepLinkHandled = useRef(false)
 
   const [view, setView] = useState('month')
   const [anchor, setAnchor] = useState(() => startOfDay(new Date()))
@@ -130,6 +136,60 @@ export default function Calendar() {
     [detail, events]
   )
 
+  // Deep links from shared WhatsApp messages: ?event=<id> opens that event,
+  // ?week=<yyyy-mm-dd> jumps to that week.
+  useEffect(() => {
+    if (loading || deepLinkHandled.current) return
+    const eventId = searchParams.get('event')
+    const week = searchParams.get('week')
+    if (eventId) {
+      const ev = events.find((e) => e.id === eventId)
+      if (ev) {
+        setAnchor(startOfDay(ev.start_time))
+        setDetail(ev)
+      }
+      deepLinkHandled.current = true
+      setSearchParams({}, { replace: true })
+    } else if (week) {
+      const d = parseDateOnly(week)
+      if (d) {
+        setView('week')
+        setAnchor(startOfDay(d))
+      }
+      deepLinkHandled.current = true
+      setSearchParams({}, { replace: true })
+    }
+  }, [loading, events, searchParams, setSearchParams])
+
+  function shareWeek() {
+    const weekStart = startOfWeek(anchor)
+    const sections = []
+    for (let i = 0; i < 7; i += 1) {
+      const day = addDays(weekStart, i)
+      const list = (eventsByDay.get(startOfDay(day).getTime()) || [])
+        .slice()
+        .sort((a, b) => new Date(a.start_time) - new Date(b.start_time))
+      if (list.length === 0) continue
+      sections.push({
+        dayLabel: `${DAY_NAMES_SHORT[day.getDay()]}, ${formatDateShort(day)}`,
+        entries: list.map((ev) => {
+          const signed = (attendeeIdsByEvent.get(ev.id) || []).length
+          const name = ev.title ? `${ev.type?.name || 'Event'}: ${ev.title}` : ev.type?.name || 'Event'
+          return `${formatEventWhen(ev)} — ${name} (${signed}/${ev.capacity})`
+        }),
+      })
+    }
+    const url = `${window.location.origin}/app/calendar?week=${toDateOnly(weekStart)}`
+    openWhatsApp(
+      buildWeekShareText({
+        groupName: activeGroup?.name || 'our care team',
+        rangeLabel: `${formatDateShort(weekStart)} – ${formatDateShort(addDays(weekStart, 6))}`,
+        sections,
+        url,
+      })
+    )
+  }
+
   function shiftPeriod(dir) {
     if (view === 'week') {
       setAnchor((a) => addDays(a, dir * 7))
@@ -207,6 +267,10 @@ export default function Calendar() {
           ›
         </button>
       </div>
+
+      <button type="button" className="btn btn-whatsapp btn-block share-week-btn" onClick={shareWeek}>
+        <WhatsAppIcon /> Share this week
+      </button>
 
       {loading ? (
         <InlineLoading label="Loading events…" />
