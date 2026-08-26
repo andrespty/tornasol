@@ -122,7 +122,7 @@ export default function Calendar() {
   function addOnDay() {
     const d = dayModalDay
     setDayModalDay(null)
-    setAddState({ date: d })
+    setAddState({ date: d, taskDue: d })
   }
 
   const weekStartLabel = startOfWeek(anchor)
@@ -138,7 +138,7 @@ export default function Calendar() {
         {canCreateEvent && (
           <button
             className="btn btn-primary btn-sm"
-            onClick={() => setAddState({ date: startOfDay(new Date()) })}
+            onClick={() => setAddState({ date: startOfDay(new Date()), taskDue: null })}
           >
             <PlusIcon width={20} height={20} /> Add
           </button>
@@ -205,6 +205,7 @@ export default function Calendar() {
         members={members}
         memberCount={members.length}
         defaultDate={addState?.date}
+        taskDueDefault={addState?.taskDue}
         defaultMode="event"
         onCreated={load}
       />

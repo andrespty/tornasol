@@ -54,11 +54,16 @@ export default function AddModal({
   members,
   memberCount,
   defaultDate,
+  taskDueDefault,
   defaultMode = 'event',
   onCreated,
 }) {
   const [mode, setMode] = useState(defaultMode)
   const [date, setDate] = useState(() => startOfDay(defaultDate || new Date()))
+  // Task due date is optional and defaults per entry point (day vs Tasks tab).
+  const [taskDue, setTaskDue] = useState(() =>
+    taskDueDefault ? startOfDay(taskDueDefault) : null
+  )
 
   // Event fields
   const [title, setTitle] = useState('')
@@ -83,9 +88,10 @@ export default function AddModal({
     if (open) {
       setMode(defaultMode)
       setDate(startOfDay(defaultDate || new Date()))
+      setTaskDue(taskDueDefault ? startOfDay(taskDueDefault) : null)
       setError('')
     }
-  }, [open, defaultDate, defaultMode])
+  }, [open, defaultDate, taskDueDefault, defaultMode])
 
   useEffect(() => {
     if (eventTypes?.length && !typeId) setTypeId(eventTypes[0].id)
@@ -141,7 +147,7 @@ export default function AddModal({
       title: t,
       assigned_user_id: assignee || null,
       is_shared: !assignee,
-      due_date: toDateOnly(date),
+      due_date: taskDue ? toDateOnly(taskDue) : null,
     })
     if (err) throw err
     setTaskTitle('')
@@ -210,13 +216,13 @@ export default function AddModal({
           </div>
         )}
 
-        <div className="field" style={{ marginBottom: 0 }}>
-          <span className="field-label">Day</span>
-          <DateField value={date} onChange={setDate} />
-        </div>
-
         {mode === 'event' ? (
           <>
+            <div className="field" style={{ marginBottom: 0 }}>
+              <span className="field-label">Day</span>
+              <DateField value={date} onChange={setDate} />
+            </div>
+
             <label className="field" style={{ marginBottom: 0 }}>
               <span className="field-label">Title (optional)</span>
               <input
@@ -305,6 +311,16 @@ export default function AddModal({
                 value={assignee}
                 onChange={setAssignee}
                 options={memberOptions}
+              />
+            </div>
+
+            <div className="field" style={{ marginBottom: 0 }}>
+              <span className="field-label">Due date (optional)</span>
+              <DateField
+                value={taskDue}
+                onChange={setTaskDue}
+                clearable
+                placeholder="No due date"
               />
             </div>
           </>

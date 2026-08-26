@@ -12,8 +12,14 @@ import {
   DAY_NAMES_SHORT,
 } from '../lib/date'
 
-/** Non-native date picker: a button that opens a tappable month calendar. */
-export default function DateField({ value, onChange }) {
+/** Non-native date picker: a button that opens a tappable month calendar.
+ *  When `clearable`, the value may be null and the sheet offers "No due date". */
+export default function DateField({
+  value,
+  onChange,
+  placeholder = 'Pick a day',
+  clearable = false,
+}) {
   const [open, setOpen] = useState(false)
   const [anchor, setAnchor] = useState(() => startOfMonth(value || new Date()))
 
@@ -30,12 +36,24 @@ export default function DateField({ value, onChange }) {
   return (
     <>
       <button type="button" className="select select-sheet-btn" onClick={() => setOpen(true)}>
-        <span className="select-sheet-label">{formatDayLong(value)}</span>
+        <span className="select-sheet-label">{value ? formatDayLong(value) : placeholder}</span>
         <span className="select-sheet-chevron" aria-hidden="true">▾</span>
       </button>
 
       <Modal open={open} onClose={() => setOpen(false)} title="Pick a day">
         <div className="stack-3">
+          {clearable && (
+            <button
+              type="button"
+              className={`sheet-item${!value ? ' is-active' : ''}`}
+              onClick={() => {
+                onChange(null)
+                setOpen(false)
+              }}
+            >
+              <span className="sheet-item-label">No due date</span>
+            </button>
+          )}
           <div className="period-nav">
             <button className="nav-arrow" onClick={() => move(-1)} aria-label="Previous month">
               ‹
